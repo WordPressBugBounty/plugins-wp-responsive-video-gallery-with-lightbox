@@ -3,7 +3,7 @@ Contributors:nik00726
 Donate link:http://www.i13websolution.com/donate-wordpress_image_thumbnail.php
 Tags:video carousel,youtube slider,vimeo slider,video thumbnail slider,Video Gallery
 Requires at least:3.5
-Tested up to:6.6
+Tested up to:6.7
 Version:1.0.24
 Stable tag:1.0.24
 License:GPLv2 or later
