@@ -3,9 +3,9 @@ Contributors:nik00726
 Donate link:http://www.i13websolution.com/donate-wordpress_image_thumbnail.php
 Tags:video carousel,youtube slider,vimeo slider,video thumbnail slider,Video Gallery
 Requires at least:3.5
-Tested up to:6.7
-Version:1.0.24
-Stable tag:1.0.24
+Tested up to:6.8
+Version:1.0.25
+Stable tag:1.0.25
 License:GPLv2 or later
 License URI:http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -128,6 +128,12 @@ This plugin is free for everyone! Since it's released under the GPL, you can use
 
 
 == Changelog ==
+
+= 1.0.25 =
+
+* Added webp image support
+* Tested with WordPress 6.8
+
 
 = 1.0.24 =
 

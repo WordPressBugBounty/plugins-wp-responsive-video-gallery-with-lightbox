@@ -5,7 +5,7 @@
  * Author URI:https://www.i13websolution.com/
  * Description:This is beautiful responsive carousel slider with responsive lightbox.Add any number of video from admin panel. 
  * Author:I Thirteen Web Solution 
- * Version:1.0.24
+ * Version:1.0.25
  * Text Domain:wp-responsive-video-gallery-with-lightbox
  * Domain Path: /languages
  */
@@ -1450,6 +1450,10 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 
                                                               $ext='gif'; 
                                                            } 
+                                                           else if (exif_imagetype($HdnMediaSelection) == IMAGETYPE_WEBP) {
+
+                                                              $ext='webp'; 
+                                                           } 
 
                                                         }
 							$imagename = $vid . '_big.' . $ext;
@@ -1525,6 +1529,10 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
                                                    else if (exif_imagetype($HdnMediaSelection) == IMAGETYPE_GIF) {
 
                                                       $ext='gif'; 
+                                                   } 
+                                                   else if (exif_imagetype($HdnMediaSelection) == IMAGETYPE_WEBP) {
+
+                                                      $ext='webp'; 
                                                    } 
 
                                                 }
@@ -1945,6 +1953,7 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
                                                                                                     validExtensions[1] = 'jpeg';
                                                                                                     validExtensions[2] = 'png';
                                                                                                     validExtensions[3] = 'gif';
+                                                                                                    validExtensions[4] = 'webp';
 
                                                                                                     var inarr = parseInt(jQuery.inArray(attachment.subtype, validExtensions));
                                                                                                       if (inarr > 0 && attachment.type.toLowerCase() == 'image'){
@@ -2146,6 +2155,7 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
                                                                              validExtensions[3] = 'gif';
                                                                              validExtensions[4] = 'bmp';
                                                                              validExtensions[5] = 'tif';
+                                                                             validExtensions[6] = 'webp';
                                                                              var extension = filename.substr((filename.lastIndexOf('.') + 1)).toLowerCase();
                                                                              var inarr = parseInt(jQuery.inArray(extension, validExtensions));
                                                                              if (inarr < 0){
