@@ -16,7 +16,7 @@
  *   http://www.gnu.org/licenses/gpl.html
  */
  
-#fancybox_vgl-loading_ {
+#fancybox-loading_ {
 	position: fixed;
 	top: 50%;
 	left: 50%;
@@ -31,13 +31,13 @@
 	display: none;
 }
 
-#fancybox_vgl-loading_ div {
+#fancybox-loading_ div {
 	width: 44px;
 	height: 44px;
 	background: url('../images/vl-box/loading.gif') center center no-repeat;
 }
 
-#fancybox_vgl-overlay {
+#fancybox-overlay {
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -48,7 +48,7 @@ box-sizing:content-box;
 
 }
 
-#fancybox_vgl-tmp {
+#fancybox-tmp {
 	padding: 0;
 	margin: 0;
 	border: 0;
@@ -56,7 +56,7 @@ box-sizing:content-box;
 	display: none;
 }
 
-#fancybox_vgl-wrap {
+#fancybox-wrap {
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -70,7 +70,7 @@ box-sizing:content-box;
 
 }
 
-#fancybox_vgl-outer {
+#fancybox-outer {
 	position: relative;
 	width: 100%;
 	height: 100%;
@@ -82,7 +82,7 @@ box-sizing:content-box;
         box-sizing:content-box;
 }
 
-#fancybox_vgl-content {
+#fancybox-content {
 	width: 0;
 	height: 0;
 	padding: 0;
@@ -95,7 +95,7 @@ box-sizing:content-box;
 
 }
 
-#fancybox_vgl-hide-sel-frame {
+#fancybox-hide-sel-frame {
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -108,7 +108,7 @@ box-sizing:content-box;
 
 }
 
-#fancybox_vgl-close {
+#fancybox-close {
 	position: absolute;
 	top: -18px;
 	right: -18px;
@@ -120,14 +120,14 @@ box-sizing:content-box;
 	display: none;
 }
 
-#fancybox_vgl-error {
+#fancybox-error {
 	color: #444;
 	font: normal 12px/20px Arial, Helvetica, sans-serif;
 	padding: 14px;
 	margin: 0;
 }
 
-#fancybox_vgl-img {
+#fancybox-img {
 	max-width: 100%;
 	max-height: 100%;
 	padding: 0;
@@ -136,7 +136,7 @@ box-sizing:content-box;
 	outline: none;
 }
 
-#fancybox_vgl-frame {
+#fancybox-frame {
 	width: 100%;
 	height: 100%;
 	border: none;
@@ -146,11 +146,11 @@ box-sizing:content-box;
 
 }
 
-#fancybox_vgl-left_, #fancybox_vgl-right_{
+#fancybox-left_, #fancybox-right_{
 	position: absolute;
 	bottom: 0px;
 	height: 34px;
-	width: 7%;
+	width: 30%;
 	cursor: pointer;
 	outline: none;
 	z-index: 1102;
@@ -159,15 +159,15 @@ box-sizing:content-box;
         margin-top: -16px;
 }
 
-#fancybox_vgl-left_ {
+#fancybox-left_ {
 	left: 0px;
 }
 
-#fancybox_vgl-right_ {
+#fancybox-right_ {
 	right: 0px;
 }
 
-#fancybox_vgl-left-ico_, #fancybox_vgl-right-ico_ {
+#fancybox-left-ico_, #fancybox-right-ico_ {
 	position: absolute;
 	top: 50%;
 	left: -9999px;
@@ -179,31 +179,31 @@ box-sizing:content-box;
 	display: block;
 }
 
-#fancybox_vgl-left-ico_ {
+#fancybox-left-ico_ {
 	background: url('../images/vl-box/controls.png') 0 -36px no-repeat;
 }
 
-#fancybox_vgl-right-ico_ {
+#fancybox-right-ico_ {
 	background: url('../images/vl-box/controls.png') 0 -72px no-repeat;
 }
 
-#fancybox_vgl-left_:hover span {
+#fancybox-left_:hover span {
 	left: 19px;
 }
 
-#fancybox_vgl-right_:hover span {
+#fancybox-right_:hover span {
 	left: auto;
 	right: 19px;
 }
 
-#fancybox_vgl-title {
+#fancybox-title {
 	font-family: Arial, Helvetica, sans-serif;
 	font-size: 12px;
 	z-index: 1102;
 	background:#000;
 }
 
-.fancybox_vgl-title-inside {
+.fancybox-title-inside {
 	position: relative;
 	padding-bottom: 10px;
 	color: #333;
@@ -211,12 +211,12 @@ box-sizing:content-box;
 	background: #fff;
 }
 
-.fancybox_vgl-title-outside {
+.fancybox-title-outside {
 	/*padding-top: 10px;*/
 	color: #fff;
 }
 
-.fancybox_vgl-title-over {
+.fancybox-title-over {
 	position: absolute;
 	bottom: 0;
 	left: 0;
@@ -224,14 +224,14 @@ box-sizing:content-box;
 	text-align: left;
 }
 
-#fancybox_vgl-title-over {
+#fancybox-title-over {
 	display: block;
 	padding: 10px;
 	background-color: #000;
 	background-color: rgba(0,0,0,0.5);	
 }
 
-.fancybox_vgl-title-float {
+.fancybox-title-float {
 	position: absolute;
 	bottom: -20px;
 	padding: 6px 12px;
