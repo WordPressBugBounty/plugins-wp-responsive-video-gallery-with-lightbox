@@ -16,7 +16,7 @@
  *   http://www.gnu.org/licenses/gpl.html
  */
  
-#fancybox-loading_ {
+#fancybox_vgl-loading_ {
 	position: fixed;
 	top: 50%;
 	left: 50%;
@@ -31,13 +31,13 @@
 	display: none;
 }
 
-#fancybox-loading_ div {
+#fancybox_vgl-loading_ div {
 	width: 44px;
 	height: 44px;
 	background: url('../images/vl-box/loading.gif') center center no-repeat;
 }
 
-#fancybox-overlay {
+#fancybox_vgl-overlay {
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -48,7 +48,7 @@ box-sizing:content-box;
 
 }
 
-#fancybox-tmp {
+#fancybox_vgl-tmp {
 	padding: 0;
 	margin: 0;
 	border: 0;
@@ -56,7 +56,7 @@ box-sizing:content-box;
 	display: none;
 }
 
-#fancybox-wrap {
+#fancybox_vgl-wrap {
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -70,7 +70,7 @@ box-sizing:content-box;
 
 }
 
-#fancybox-outer {
+#fancybox_vgl-outer {
 	position: relative;
 	width: 100%;
 	height: 100%;
@@ -82,7 +82,7 @@ box-sizing:content-box;
         box-sizing:content-box;
 }
 
-#fancybox-content {
+#fancybox_vgl-content {
 	width: 0;
 	height: 0;
 	padding: 0;
@@ -95,7 +95,7 @@ box-sizing:content-box;
 
 }
 
-#fancybox-hide-sel-frame {
+#fancybox_vgl-hide-sel-frame {
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -108,7 +108,7 @@ box-sizing:content-box;
 
 }
 
-#fancybox-close {
+#fancybox_vgl-close {
 	position: absolute;
 	top: -18px;
 	right: -18px;
@@ -120,14 +120,14 @@ box-sizing:content-box;
 	display: none;
 }
 
-#fancybox-error {
+#fancybox_vgl-error {
 	color: #444;
 	font: normal 12px/20px Arial, Helvetica, sans-serif;
 	padding: 14px;
 	margin: 0;
 }
 
-#fancybox-img {
+#fancybox_vgl-img {
 	max-width: 100%;
 	max-height: 100%;
 	padding: 0;
@@ -136,7 +136,7 @@ box-sizing:content-box;
 	outline: none;
 }
 
-#fancybox-frame {
+#fancybox_vgl-frame {
 	width: 100%;
 	height: 100%;
 	border: none;
@@ -146,11 +146,11 @@ box-sizing:content-box;
 
 }
 
-#fancybox-left_, #fancybox-right_{
+#fancybox_vgl-left_, #fancybox_vgl-right_{
 	position: absolute;
 	bottom: 0px;
 	height: 34px;
-	width: 30%;
+	width: 7%;
 	cursor: pointer;
 	outline: none;
 	z-index: 1102;
@@ -159,15 +159,15 @@ box-sizing:content-box;
         margin-top: -16px;
 }
 
-#fancybox-left_ {
+#fancybox_vgl-left_ {
 	left: 0px;
 }
 
-#fancybox-right_ {
+#fancybox_vgl-right_ {
 	right: 0px;
 }
 
-#fancybox-left-ico_, #fancybox-right-ico_ {
+#fancybox_vgl-left-ico_, #fancybox_vgl-right-ico_ {
 	position: absolute;
 	top: 50%;
 	left: -9999px;
@@ -179,31 +179,31 @@ box-sizing:content-box;
 	display: block;
 }
 
-#fancybox-left-ico_ {
+#fancybox_vgl-left-ico_ {
 	background: url('../images/vl-box/controls.png') 0 -36px no-repeat;
 }
 
-#fancybox-right-ico_ {
+#fancybox_vgl-right-ico_ {
 	background: url('../images/vl-box/controls.png') 0 -72px no-repeat;
 }
 
-#fancybox-left_:hover span {
+#fancybox_vgl-left_:hover span {
 	left: 19px;
 }
 
-#fancybox-right_:hover span {
+#fancybox_vgl-right_:hover span {
 	left: auto;
 	right: 19px;
 }
 
-#fancybox-title {
+#fancybox_vgl-title {
 	font-family: Arial, Helvetica, sans-serif;
 	font-size: 12px;
 	z-index: 1102;
 	background:#000;
 }
 
-.fancybox-title-inside {
+.fancybox_vgl-title-inside {
 	position: relative;
 	padding-bottom: 10px;
 	color: #333;
@@ -211,12 +211,12 @@ box-sizing:content-box;
 	background: #fff;
 }
 
-.fancybox-title-outside {
+.fancybox_vgl-title-outside {
 	/*padding-top: 10px;*/
 	color: #fff;
 }
 
-.fancybox-title-over {
+.fancybox_vgl-title-over {
 	position: absolute;
 	bottom: 0;
 	left: 0;
@@ -224,14 +224,14 @@ box-sizing:content-box;
 	text-align: left;
 }
 
-#fancybox-title-over {
+#fancybox_vgl-title-over {
 	display: block;
 	padding: 10px;
 	background-color: #000;
 	background-color: rgba(0,0,0,0.5);	
 }
 
-.fancybox-title-float {
+.fancybox_vgl-title-float {
 	position: absolute;
 	bottom: -20px;
 	padding: 6px 12px;
@@ -251,13 +251,5 @@ box-sizing:content-box;
     font-weight: bold;
     }
 .clear_description_{margin-top: 5px;line-height:18px;color:#ffffff}
-.playbtnCss {
-  display: block;
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  z-index: 1;
-  background: url("../images/vl-box/player_play.png")  no-repeat center center;
-}
+/* .playbtnCss moved to wp-video-gallery-lighbox-style.css - it's not Legacy-specific,
+   it's the play icon shown on every thumbnail regardless of lightbox engine. */

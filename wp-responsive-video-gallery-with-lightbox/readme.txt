@@ -136,7 +136,10 @@ OR you can add this to your theme by adding this code echo do_shortcode('[print_
 8. PRO Version Add Video
 9. PRO Version video gallery
 10. PRO Version Lightbox
-
+11. Free version Block
+12. Pro version add/update galleries from block
+13. Pro Version Youtube import playlist
+14. New Modern Lightbox
 
 
 == License ==

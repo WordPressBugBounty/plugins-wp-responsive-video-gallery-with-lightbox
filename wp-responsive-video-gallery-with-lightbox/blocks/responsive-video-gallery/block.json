@@ -1,0 +1,12 @@
+{
+	"apiVersion": 2,
+	"name": "rvg/responsive-video-gallery",
+	"title": "Responsive Video Gallery",
+	"category": "media",
+	"icon": "video-alt3",
+	"description": "Insert your Responsive Video Gallery with Lightbox.",
+	"keywords": [ "video", "gallery", "lightbox", "slider", "youtube", "dailymotion" ],
+	"supports": {
+		"html": false
+	}
+}

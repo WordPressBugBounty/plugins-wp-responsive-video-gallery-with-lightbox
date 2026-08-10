@@ -14,13 +14,16 @@
 /** RESET AND LAYOUT
 ===================================*/
 
-.responsiveSlider{padding: 0px ;margin: 0px ;}
+.responsiveSlider{padding: 0px !important;margin: 0px !important;list-style: none !important;}
+.responsiveSlider li{list-style: none !important;}
 .responsiveSlider li img{ background: none ;border: none ;margin: 0 0px 0px 0 ;max-width:auto ; padding: 0px ; }
 .bx-wrapper {
     position: relative ;
     margin: 0 auto 19px ;
     padding: 0 ;
     *zoom: 1 ;
+     -ms-touch-action: pan-y;
+  touch-action: pan-y;
 }
 .bx-wrapper * {box-sizing:content-box}
 .limargin{margin-right: 15px ;}
@@ -61,7 +64,7 @@
 
 .bx-wrapper .bx-pager {
     text-align: center ;
-    font-size: .85em ;
+    font-size: 13px ;
     font-family: Arial ;
     font-weight: bold ;
     color: #666 ;
@@ -196,7 +199,7 @@
     color: #fff !important;
     font-family: Arial !important;
     display: block !important;
-    font-size: .85em !important;
+    font-size: 13px !important;
     padding: 10px !important;
 }
 
@@ -230,3 +233,18 @@
 .table tbody tr:hover td,.table tbody tr:hover th{background-color:#f5f5f5;}
 .alignCenter{text-align: center;}
 #img_disp{border:1px solid #ccc;width:200px;height:200px }
+.i13_bx_slider{touch-action:pan-y; position:relative; display:block;}
+
+/* Play button overlay shown on every video thumbnail - not lightbox-engine specific,
+   moved here from vl-box-css.css (Legacy-only) so it shows regardless of which
+   Lightbox Engine is selected. */
+.playbtnCss {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  z-index: 1;
+  background: url("../images/vl-box/player_play.png") no-repeat center center;
+}

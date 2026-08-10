@@ -1,23 +1,236 @@
 <?php
 /*
- * Plugin Name: WP Responsive Video Gallery With Lightbox 
- * Plugin URI:http://www.i13websolution.com/wordpress-responsive-video-gallery-with-lightbox-pro.html 
- * Author URI:http://www.i13websolution.com/wordpress-responsive-video-gallery-with-lightbox-pro.html 
- * Description:This is beautiful responsive video gallery with responsive lightbox.Add any number of video from admin panel. 
+ * Plugin Name: video carousel slider with lightbox
+ * Plugin URI:https://www.i13websolution.com/product/wordpress-responsive-video-gallery-with-lightbox-pro/ 
+ * Author URI:https://www.i13websolution.com/
+ * Description:This is beautiful responsive carousel slider with responsive lightbox.Add any number of video from admin panel. 
  * Author:I Thirteen Web Solution 
- * Version:1.0
+ * Version:1.0.48
+ * Text Domain:wp-responsive-video-gallery-with-lightbox
+ * Domain Path: /languages
  */
 //error_reporting ( 0 );
 add_filter ( 'widget_text', 'do_shortcode' );
 add_action ( 'admin_menu', 'responsive_video_gallery_plus_lightbox_add_admin_menu' );
 //add_action ( 'admin_init', 'responsive_video_gallery_plus_lightbox_add_admin_init' );
 register_activation_hook ( __FILE__, 'install_responsive_video_gallery_plus_lightbox' );
+// Also run on admin_init: register_activation_hook only fires on explicit
+// (re)activation, not on a normal plugin Update (which just replaces files) - without
+// this, existing sites updating the normal way would never get the migration that sets
+// their engine settings to "legacy", and could default to "modern" instead.
+add_action ( 'admin_init', 'install_responsive_video_gallery_plus_lightbox' );
+register_deactivation_hook(__FILE__,'rvg_responsive_video_gallery_remove_access_capabilities');
 add_action ( 'wp_enqueue_scripts', 'responsive_video_gallery_plus_lightbox_load_styles_and_js' );
 add_shortcode ( 'print_responsive_video_gallery_plus_lightbox', 'print_responsive_video_gallery_plus_lightbox_func' );
+add_action ( 'init', 'rvg_register_video_gallery_block' );
 add_action ( 'admin_notices', 'responsive_video_gallery_plus_lightbox_admin_notices' );
 
 add_action( 'wp_ajax_check_file_exist', 'check_file_exist_callback' );
 add_action( 'wp_ajax_get_youtube_info', 'get_youtube_info_callback' );
+add_action('plugins_loaded', 'wrvgwl_load_lang_for_responsive_video_gallery_plus_lightbox');
+add_filter( 'user_has_cap', 'rvg_responsive_video_gallery_admin_cap_list' , 10, 4 );
+
+function wrvgwl_load_lang_for_responsive_video_gallery_plus_lightbox() {
+            
+            load_plugin_textdomain( 'wp-responsive-video-gallery-with-lightbox', false, basename( dirname( __FILE__ ) ) . '/languages/' );
+            add_filter( 'map_meta_cap',  'map_rvg_responsive_video_gallery_meta_caps', 10, 4 );
+    }
+
+    
+function map_rvg_responsive_video_gallery_meta_caps( array $caps, $cap, $user_id, array $args  ) {
+        
+       
+        if ( ! in_array( $cap, array(
+                                      'rvg_responsive_video_gallery_settings',
+                                      'rvg_responsive_video_gallery_view_video',
+                                      'rvg_responsive_video_gallery_add_video',
+                                      'rvg_responsive_video_gallery_edit_video',
+                                      'rvg_responsive_video_gallery_delete_video',
+                                      'rvg_responsive_video_gallery_preview',
+                                      
+                                    ), true ) ) {
+            
+			return $caps;
+         }
+
+       
+         
+   
+        $caps = array();
+
+        switch ( $cap ) {
+            
+                 case 'rvg_responsive_video_gallery_settings':
+                        $caps[] = 'rvg_responsive_video_gallery_settings';
+                        break;
+              
+                case 'rvg_responsive_video_gallery_view_video':
+                        $caps[] = 'rvg_responsive_video_gallery_view_video';
+                        break;
+              
+                case 'rvg_responsive_video_gallery_add_video':
+                        $caps[] = 'rvg_responsive_video_gallery_add_video';
+                        break;
+              
+                case 'rvg_responsive_video_gallery_edit_video':
+                        $caps[] = 'rvg_responsive_video_gallery_edit_video';
+                        break;
+              
+                case 'rvg_responsive_video_gallery_delete_video':
+                        $caps[] = 'rvg_responsive_video_gallery_delete_video';
+                        break;
+                    
+                case 'rvg_responsive_video_gallery_preview':
+                        $caps[] = 'rvg_responsive_video_gallery_preview';
+                        break;
+                  
+              
+                default:
+                        
+                        $caps[] = 'do_not_allow';
+                        break;
+        }
+
+      
+     return apply_filters( 'rvg_responsive_video_gallery_meta_caps', $caps, $cap, $user_id, $args );
+}
+
+
+ function rvg_responsive_video_gallery_admin_cap_list($allcaps, $caps, $args, $user){
+        
+        
+        if ( ! in_array( 'administrator', $user->roles ) ) {
+            
+            return $allcaps;
+        }
+        else{
+            
+            if(!isset($allcaps['rvg_responsive_video_gallery_settings'])){
+                
+                $allcaps['rvg_responsive_video_gallery_settings']=true;
+            }
+            
+            if(!isset($allcaps['rvg_responsive_video_gallery_view_video'])){
+                
+                $allcaps['rvg_responsive_video_gallery_view_video']=true;
+            }
+            
+            if(!isset($allcaps['rvg_responsive_video_gallery_add_video'])){
+                
+                $allcaps['rvg_responsive_video_gallery_add_video']=true;
+            }
+            if(!isset($allcaps['rvg_responsive_video_gallery_edit_video'])){
+                
+                $allcaps['rvg_responsive_video_gallery_edit_video']=true;
+            }
+            if(!isset($allcaps['rvg_responsive_video_gallery_delete_video'])){
+                
+                $allcaps['rvg_responsive_video_gallery_delete_video']=true;
+            }
+            if(!isset($allcaps['rvg_responsive_video_gallery_preview'])){
+                
+                $allcaps['rvg_responsive_video_gallery_preview']=true;
+            }
+         
+        }
+        
+        return $allcaps;
+        
+    }
+
+function  rvg_responsive_video_gallery_add_access_capabilities() {
+     
+    // Capabilities for all roles.
+    $roles = array( 'administrator' );
+    foreach ( $roles as $role ) {
+        
+            $role = get_role( $role );
+            if ( empty( $role ) ) {
+                    continue;
+            }
+         
+            
+            if(!$role->has_cap( 'rvg_responsive_video_gallery_settings' ) ){
+            
+                    $role->add_cap( 'rvg_responsive_video_gallery_settings' );
+            }
+            
+            if(!$role->has_cap( 'rvg_responsive_video_gallery_view_video' ) ){
+            
+                    $role->add_cap( 'rvg_responsive_video_gallery_view_video' );
+            }
+         
+            
+            if(!$role->has_cap( 'rvg_responsive_video_gallery_add_video' ) ){
+            
+                    $role->add_cap( 'rvg_responsive_video_gallery_add_video' );
+            }
+            
+            if(!$role->has_cap( 'rvg_responsive_video_gallery_edit_video' ) ){
+            
+                    $role->add_cap( 'rvg_responsive_video_gallery_edit_video' );
+            }
+            
+            if(!$role->has_cap( 'rvg_responsive_video_gallery_delete_video' ) ){
+            
+                    $role->add_cap( 'rvg_responsive_video_gallery_delete_video' );
+            }
+            
+            if(!$role->has_cap( 'rvg_responsive_video_gallery_preview' ) ){
+            
+                    $role->add_cap( 'rvg_responsive_video_gallery_preview' );
+            }
+            
+         
+    }
+    
+    $user = wp_get_current_user();
+    $user->get_role_caps();
+    
+}
+
+function rvg_responsive_video_gallery_remove_access_capabilities(){
+    
+    global $wp_roles;
+
+    if ( ! isset( $wp_roles ) ) {
+            $wp_roles = new WP_Roles();
+    }
+
+    foreach ( $wp_roles->roles as $role => $details ) {
+            $role = $wp_roles->get_role( $role );
+            if ( empty( $role ) ) {
+                    continue;
+            }
+
+            $role->remove_cap( 'rvg_responsive_video_gallery_settings' );
+            $role->remove_cap( 'rvg_responsive_video_gallery_view_video' );
+            $role->remove_cap( 'rvg_responsive_video_gallery_add_video' );
+            $role->remove_cap( 'rvg_responsive_video_gallery_edit_video' );
+            $role->remove_cap( 'rvg_responsive_video_gallery_delete_video' );
+            $role->remove_cap( 'rvg_responsive_video_gallery_preview' );
+       
+
+    }
+
+    // Refresh current set of capabilities of the user, to be able to directly use the new caps.
+    $user = wp_get_current_user();
+    $user->get_role_caps();
+    
+}
+
+function vgallery_save_image_curl($url,$saveto){
+    
+    $raw = wp_remote_retrieve_body( wp_remote_get( $url ) );
+    
+    if(file_exists($saveto)){
+        @unlink($saveto);
+    }
+    $fp = @fopen($saveto,'x');
+    @fwrite($fp, $raw);
+    @fclose($fp);
+    
+}
 
 function get_youtube_info_callback(){
   
@@ -28,7 +241,7 @@ function get_youtube_info_callback(){
 
                 if (isset($_POST['vNonce']) and $_POST['vNonce'] != '') {
 
-                    $retrieved_nonce = $_POST['vNonce'];
+                    $retrieved_nonce = sanitize_text_field($_POST['vNonce']);
                 }
                 if (!wp_verify_nonce($retrieved_nonce, 'vNonce')) {
 
@@ -37,26 +250,9 @@ function get_youtube_info_callback(){
                 }
 
                 $vid=htmlentities(strip_tags($_POST['vid']),ENT_QUOTES);
-                $url=$_POST['url']; 
-                $ch = curl_init();
-		
-		// Set the URL
-		curl_setopt($ch, CURLOPT_URL, $url);
-		
-		// Removes the headers from the output
-		curl_setopt($ch, CURLOPT_HEADER, 0);
-		
-		// Return the output instead of displaying it directly
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		
-		curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-		@curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-		
-		// Execute the curl session
-		$output = curl_exec($ch);
-		
-		// Close the curl session
-		curl_close($ch);
+                $url=esc_url_raw($_POST['url']); 
+                $output=  wp_remote_retrieve_body( wp_remote_get( $url ) ); 
+
                 $output=json_decode($output);
                 
                 
@@ -66,7 +262,7 @@ function get_youtube_info_callback(){
 
                 $doc->validateOnParse = false;
                 
-                $doc->loadHTML($videoInfo);
+                @$doc->loadHTML($videoInfo);
 
                 $node= $doc->getElementById('watch-description-text');
                 
@@ -105,7 +301,7 @@ function check_file_exist_callback() {
 
                 if (isset($_POST['vNonce']) and $_POST['vNonce'] != '') {
 
-                    $retrieved_nonce = $_POST['vNonce'];
+                    $retrieved_nonce = sanitize_text_field($_POST['vNonce']);
                 }
                 if (!wp_verify_nonce($retrieved_nonce, 'vNonce')) {
 
@@ -113,16 +309,11 @@ function check_file_exist_callback() {
                     wp_die('Security check fail');
                 }
 
-		$handle = curl_init($_POST['url']);
-		curl_setopt($handle,  CURLOPT_RETURNTRANSFER, TRUE);
-		
-		$response = curl_exec($handle);
-		
-		$httpCode = curl_getinfo($handle, CURLINFO_HTTP_CODE);
-		
-		curl_close($handle);
+                 $response = wp_remote_get(sanitize_text_field($_POST['url']));
+                $httpCode = wp_remote_retrieve_response_code( $response );
 		
 		echo trim((string)$httpCode);die;
+                
 		
 	}
 	//echo die;
@@ -141,13 +332,17 @@ function responsive_video_gallery_plus_lightbox_admin_notices() {
 		if (file_exists ( $pathToImagesFolder ) and is_dir ( $pathToImagesFolder )) {
 			
 			if (! is_writable ( $pathToImagesFolder )) {
-				echo "<div class='updated'><p>Responsive video gallery with lightbox is active but does not have write permission on</p><p><b>" . $pathToImagesFolder . "</b> directory.Please allow write permission.</p></div> ";
+                            
+                                 echo "<div class='updated'><p>".__( 'Video Carousel Slider is active but does not have write permission on','wp-responsive-video-gallery-with-lightbox')."</p><p><b>" . $pathToImagesFolder . "</b>".__( ' directory.Please allow write permission.','wp-responsive-video-gallery-with-lightbox')."</p></div> ";
+				
 			}
 		} else {
 			
 			wp_mkdir_p ( $pathToImagesFolder );
 			if (! file_exists ( $pathToImagesFolder ) and ! is_dir ( $pathToImagesFolder )) {
-				echo "<div class='updated'><p>Responsive video gallery with lightbox is active but plugin does not have permission to create directory</p><p><b>" . $pathToImagesFolder . "</b> .Please create wp-responsive-video-gallery-with-lightbox directory inside upload directory and allow write permission.</p></div> ";
+                            
+                                echo "<div class='updated'><p>".__( 'Video Carousel Slider is active but plugin does not have permission to create directory','wp-responsive-video-gallery-with-lightbox')."</p><p><b>" . $pathToImagesFolder . "</b>".__( ' Please create wp-responsive-video-gallery-with-lightbox directory inside upload directory and allow write permission.','wp-responsive-video-gallery-with-lightbox')."</p></div> ";
+				
 			}
 		}
 	}
@@ -155,11 +350,19 @@ function responsive_video_gallery_plus_lightbox_admin_notices() {
 function responsive_video_gallery_plus_lightbox_load_styles_and_js() {
 	if (! is_admin ()) {
 		
-		wp_enqueue_style ( 'wp-video-gallery-lighbox-style', plugins_url ( '/css/wp-video-gallery-lighbox-style.css', __FILE__ ) );
-		wp_enqueue_style ( 'vl-box-css', plugins_url ( '/css/vl-box-css.css', __FILE__ ) );
-		wp_enqueue_script ( 'jquery' );
-		wp_enqueue_script ( 'video-gallery-jc', plugins_url ( '/js/video-gallery-jc.js', __FILE__ ) );
-		wp_enqueue_script ( 'vl-box-js', plugins_url ( '/js/vl-box-js.js', __FILE__ ) );
+		wp_register_style ( 'wp-video-gallery-lighbox-style', plugins_url ( '/css/wp-video-gallery-lighbox-style.css', __FILE__ ),array(),'1.0.26' );
+		wp_register_style ( 'rvg-lightbox-css', plugins_url ( '/css/rvg-lightbox.css', __FILE__ ),array(),'1.0.26' );
+		wp_register_script ( 'video-gallery-jc', plugins_url ( '/js/video-gallery-jc.js', __FILE__ ),array('jquery'),'1.0.20' );
+		wp_register_script ( 'rvg-lightbox-js', plugins_url ( '/js/rvg-lightbox.js', __FILE__ ),array(),'1.0.26', true );
+
+		// Legacy lightbox (FancyBox), kept for sites that already had it selected before
+		// the modern lightbox existed - not loaded unless the setting requests it.
+		wp_register_style ( 'vl-box-css', plugins_url ( '/css/vl-box-css.css', __FILE__ ),array(),'1.0.25' );
+		wp_register_script ( 'vl-box-js', plugins_url ( '/js/vl-box-js.js', __FILE__ ),array('jquery'),'1.0.25', true );
+
+		// Modern slider engine (alternative to Legacy/bxSlider), no jQuery dependency.
+		wp_register_style ( 'rvg-modern-slider-style', plugins_url ( '/css/rvg-modern-slider.css', __FILE__ ),array(),'1.0.45' );
+		wp_register_script ( 'rvg-modern-slider-js', plugins_url ( '/js/rvg-modern-slider.js', __FILE__ ),array(),'1.0.45', true );
 	}
 }
 function install_responsive_video_gallery_plus_lightbox() {
@@ -182,7 +385,7 @@ function install_responsive_video_gallery_plus_lightbox() {
         `open_link_in` tinyint(1) NOT NULL DEFAULT '1',
         `enable_light_box_video_desc` tinyint(1) NOT NULL DEFAULT '1',
         `createdon` datetime NOT NULL,
-        `slider_id` int(10) unsigned NOT NULL DEFAULT '0',
+        `slider_id` int(10) unsigned NOT NULL DEFAULT '1',
          PRIMARY KEY (`id`)
         ) $charset_collate;";
         
@@ -199,32 +402,155 @@ function install_responsive_video_gallery_plus_lightbox() {
                                                     'min_visible'=> '1',
                                                     'scroll' => '1',
                                                     'resizeImages'=>'1',
-                                                    'scollerBackground'=>'#FFFFFF'
+                                                    'scollerBackground'=>'#FFFFFF',
+                                                    'show_caption'=>'0',
+                                                    'show_pager'=>'0',
+                                                    'lightbox_engine'=>'modern',
+                                                    'slider_engine'=>'modern'
                                                     
                                                 );
                
-               if( !get_option( 'responsive_video_gallery_slider_settings' ) ) {
-                   
-                    update_option('responsive_video_gallery_slider_settings',$responsive_video_gallery_slider_settings);
-                } 
+         
+         
+          $existingopt=get_option('responsive_video_gallery_slider_settings');
+          if(!is_array($existingopt)){
+
+               update_option('responsive_video_gallery_slider_settings',$responsive_video_gallery_slider_settings);
+
+           }
+           else{
+
+               $flag=false;
+               if(!isset($existingopt['show_caption'])){
+
+                  $flag=true; 
+                  $existingopt['show_caption']='0'; 
+
+               }
+               if(!isset($existingopt['show_pager'])){
+
+                   $flag=true; 
+                   $existingopt['show_pager']='0'; 
+
+                }
+
+               if(!isset($existingopt['lightbox_engine'])){
+
+                   // Existing sites keep the lightbox behavior they already had (legacy
+                   // FancyBox) rather than being silently switched to the new one.
+                   $flag=true;
+                   $existingopt['lightbox_engine']='legacy';
+
+                }
+
+               if(!isset($existingopt['slider_engine'])){
+
+                   // Same reasoning as lightbox_engine: existing sites keep their
+                   // current slider (bxSlider/Legacy) behavior after updating.
+                   $flag=true;
+                   $existingopt['slider_engine']='legacy';
+
+                }
+
+               if($flag==true){
+
+                  update_option('responsive_video_gallery_slider_settings', $existingopt); 
+
+                 }
+           }
+         
+         
                 
 	require_once (ABSPATH . 'wp-admin/includes/upgrade.php');
-	dbDelta ( $sql );
+	// Only actually run dbDelta() when the plugin version has changed since it last
+	// ran, not on every single admin page load. dbDelta() can print a visible "table
+	// already exists" database error even while it's working correctly internally
+	// (it tries CREATE TABLE first, catches the failure, then falls back to ALTER) -
+	// running it unconditionally on every admin_init (needed elsewhere so schema
+	// updates aren't missed on a plain plugin Update click) meant that harmless
+	// internal error was surfacing on every single admin page load instead of just
+	// once when something had actually changed.
+	$rvg_db_version = get_option( 'rvg_db_version', '' );
+	if ( $rvg_db_version !== '1.0.47' ) {
+		dbDelta ( $sql );
+		update_option( 'rvg_db_version', '1.0.47' );
+	}
 	
 	$uploads = wp_upload_dir ();
 	$baseDir = $uploads ['basedir'];
 	$baseDir = str_replace ( "\\", "/", $baseDir );
 	$pathToImagesFolder = $baseDir . '/wp-responsive-video-gallery-with-lightbox';
 	wp_mkdir_p ( $pathToImagesFolder );
-        
+        rvg_responsive_video_gallery_add_access_capabilities();
         
         
 }
+/**
+ * Registers the Responsive Video Gallery block. Kept simple for the free version -
+ * one gallery per site (matching the shortcode's own scope), server-rendered via the
+ * same function the shortcode already uses, with just a placeholder shown in the editor.
+ */
+function rvg_register_video_gallery_block() {
+	if ( ! function_exists( 'register_block_type' ) ) {
+		return;
+	}
+
+	$url = plugin_dir_url( __FILE__ );
+
+	wp_register_script(
+		'rvg-video-gallery-block-editor',
+		$url . 'blocks/responsive-video-gallery/block.js',
+		array( 'wp-blocks', 'wp-element', 'wp-i18n', 'wp-block-editor', 'wp-components' ),
+		'1.0.36',
+		true
+	);
+
+	register_block_type(
+		plugin_dir_path( __FILE__ ) . 'blocks/responsive-video-gallery',
+		array(
+			'editor_script'   => 'rvg-video-gallery-block-editor',
+			'render_callback' => 'print_responsive_video_gallery_plus_lightbox_func',
+		)
+	);
+}
+
+/**
+ * Pro upsell sidebar box - replaces the old Facebook Like / PayPal donate / Elegant
+ * Themes affiliate / Google Workspace promo banners with a clean, on-brand upgrade
+ * prompt, matching the pattern already used in the Responsive Thumbnail Slider plugin.
+ */
+function rvg_render_pro_upsell_postbox() {
+	ob_start();
+	?>
+	<div class="stuffbox" id="namediv" style="width:100%;">
+		<h3><label><?php echo __( 'Get Responsive Video Gallery PRO', 'wp-responsive-video-gallery-with-lightbox' ); ?></label></h3>
+		<div class="inside">
+			<p style="margin-top:0;"><?php echo __( 'Unlock unlimited video galleries and more:', 'wp-responsive-video-gallery-with-lightbox' ); ?></p>
+			<ul style="margin:0 0 12px; padding:0 0 0 18px; font-size:13px; line-height:1.7;">
+				<li><?php echo __( 'Unlimited video galleries', 'wp-responsive-video-gallery-with-lightbox' ); ?></li>
+				<li><?php echo __( 'Metacafe &amp; custom HTML5 video support', 'wp-responsive-video-gallery-with-lightbox' ); ?></li>
+				<li><?php echo __( 'Custom video thumbnail or one-click auto-download', 'wp-responsive-video-gallery-with-lightbox' ); ?></li>
+				<li><?php echo __( 'Video description shown in the lightbox', 'wp-responsive-video-gallery-with-lightbox' ); ?></li>
+				<li><?php echo __( '16 slider easing effects', 'wp-responsive-video-gallery-with-lightbox' ); ?></li>
+				<li><?php echo __( 'Crop / no-crop, border radius, border color &amp; box shadow', 'wp-responsive-video-gallery-with-lightbox' ); ?></li>
+				<li><?php echo __( 'Open videos in lightbox or a new browser tab', 'wp-responsive-video-gallery-with-lightbox' ); ?></li>
+				<li><?php echo __( 'Video order + mass order updates', 'wp-responsive-video-gallery-with-lightbox' ); ?></li>
+				<li><?php echo __( 'No advertisements', 'wp-responsive-video-gallery-with-lightbox' ); ?></li>
+			</ul>
+			<p style="text-align:center;">
+				<a class="button button-primary" target="_blank" href="https://www.i13websolution.com/product/wordpress-responsive-video-gallery-with-lightbox-pro/"><?php echo __( 'Upgrade to PRO →', 'wp-responsive-video-gallery-with-lightbox' ); ?></a>
+			</p>
+		</div>
+	</div>
+	<?php
+	return ob_get_clean();
+}
+
 function responsive_video_gallery_plus_lightbox_add_admin_menu() {
-	$hook_suffix=add_menu_page ( __ ( 'Responsive Video Gallery Plus Lightbox' ), __ ( 'Video Gallery with Lightbox' ), 'administrator', 'responsive_video_gallery_with_lightbox', 'responsive_video_gallery_with_lightbox_admin_options_func' );
-	$hook_suffix=add_submenu_page ( 'responsive_video_gallery_with_lightbox', __ ( 'Gallery Settings' ), __ ( 'Gallery Settings' ), 'administrator', 'responsive_video_gallery_with_lightbox', 'responsive_video_gallery_with_lightbox_admin_options_func' );
-	$hook_suffix_image=add_submenu_page ( 'responsive_video_gallery_with_lightbox', __ ( 'Manage Videos' ), __ ( 'Manage Videos' ), 'administrator', 'responsive_video_gallery_with_lightbox_video_management', 'responsive_video_gallery_with_lightbox_video_management_func' );
-	$hook_suffix_prev=add_submenu_page ( 'responsive_video_gallery_with_lightbox', __ ( 'Preview Gallery' ), __ ( 'Preview Gallery' ), 'administrator', 'responsive_video_gallery_with_lightbox_video_preview', 'responsive_video_gallery_with_lightbox_video_preview_func' );
+	$hook_suffix=add_menu_page ( __ ( 'Responsive Video Carousel','wp-responsive-video-gallery-with-lightbox' ), __ ( 'Video Carousel with Lightbox','wp-responsive-video-gallery-with-lightbox' ), 'rvg_responsive_video_gallery_settings', 'responsive_video_gallery_with_lightbox', 'responsive_video_gallery_with_lightbox_admin_options_func', 'dashicons-video-alt3', 26 );
+	$hook_suffix=add_submenu_page ( 'responsive_video_gallery_with_lightbox', __ ( 'Carousel Settings','wp-responsive-video-gallery-with-lightbox' ), __ ( 'Carousel Settings', 'wp-responsive-video-gallery-with-lightbox'), 'rvg_responsive_video_gallery_settings', 'responsive_video_gallery_with_lightbox', 'responsive_video_gallery_with_lightbox_admin_options_func' );
+	$hook_suffix_image=add_submenu_page ( 'responsive_video_gallery_with_lightbox', __ ( 'Manage Videos','wp-responsive-video-gallery-with-lightbox' ), __ ( 'Manage Videos','wp-responsive-video-gallery-with-lightbox' ), 'rvg_responsive_video_gallery_view_video', 'responsive_video_gallery_with_lightbox_video_management', 'responsive_video_gallery_with_lightbox_video_management_func' );
+	$hook_suffix_prev=add_submenu_page ( 'responsive_video_gallery_with_lightbox', __ ( 'Preview Carousel','wp-responsive-video-gallery-with-lightbox' ), __ ( 'Preview Gallery','wp-responsive-video-gallery-with-lightbox' ), 'rvg_responsive_video_gallery_preview', 'responsive_video_gallery_with_lightbox_video_preview', 'responsive_video_gallery_with_lightbox_video_preview_func' );
 	
 	add_action( 'load-' . $hook_suffix , 'responsive_video_gallery_plus_lightbox_add_admin_init' );
 	add_action( 'load-' . $hook_suffix_image , 'responsive_video_gallery_plus_lightbox_add_admin_init' );
@@ -233,13 +559,22 @@ function responsive_video_gallery_plus_lightbox_add_admin_menu() {
 }
 function responsive_video_gallery_plus_lightbox_add_admin_init() {
 	$url = plugin_dir_url ( __FILE__ );
+	$settings = get_option('responsive_video_gallery_slider_settings');
+	$lightboxEngine = (is_array($settings) && isset($settings['lightbox_engine'])) ? $settings['lightbox_engine'] : 'modern';
 	
 	wp_enqueue_style ( 'wp-video-gallery-lighbox-style', plugins_url ( '/css/wp-video-gallery-lighbox-style.css', __FILE__ ) );
-	wp_enqueue_style ( 'vl-box-css', plugins_url ( '/css/vl-box-css.css', __FILE__ ) );
+        wp_enqueue_style( 'admin-css-resp-video-gallery', plugins_url('/css/admin-css.css', __FILE__) );
 	wp_enqueue_script ( 'jquery' );
 	wp_enqueue_script ( 'jquery.validate', $url . 'js/jquery.validate.js' );
 	wp_enqueue_script ( 'video-gallery-jc', plugins_url ( '/js/video-gallery-jc.js', __FILE__ ) );
-	wp_enqueue_script ( 'vl-box-js', plugins_url ( '/js/vl-box-js.js', __FILE__ ) );
+
+	if ( $lightboxEngine === 'legacy' ) {
+		wp_enqueue_style ( 'vl-box-css', plugins_url ( '/css/vl-box-css.css', __FILE__ ) );
+		wp_enqueue_script ( 'vl-box-js', plugins_url ( '/js/vl-box-js.js', __FILE__ ), array('jquery'), '1.0.25', true );
+	} else {
+		wp_enqueue_style ( 'rvg-lightbox-css', plugins_url ( '/css/rvg-lightbox.css', __FILE__ ) );
+		wp_enqueue_script ( 'rvg-lightbox-js', plugins_url ( '/js/rvg-lightbox.js', __FILE__ ), array(), '1.0.26', true );
+	}
 	
 	responsive_video_gallery_plus_lightbox_admin_scripts_init ();
 }
@@ -247,23 +582,31 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
 
    function responsive_video_gallery_with_lightbox_admin_options_func(){
        
+     if ( ! current_user_can( 'rvg_responsive_video_gallery_settings' ) ) {
+
+           wp_die( __( "Access Denied", "wp-responsive-video-gallery-with-lightbox" ) );
+
+      } 
+      
      if(isset($_POST['btnsave'])){
          
          if (!check_admin_referer('action_image_add_edit', 'add_edit_image_nonce')) {
 
-                wp_die('Security check fail');
+                wp_die('Security check fail','wp-responsive-video-gallery-with-lightbox');
             }
 
 
-         $auto=trim(htmlentities(strip_tags($_POST['isauto']),ENT_QUOTES));
+         $auto=trim(htmlentities(sanitize_text_field($_POST['isauto']),ENT_QUOTES));
          
-         if($auto=='auto')
+        if($auto=='auto')
            $auto=true;
-         else
+         else if($auto=='manuall')
            $auto=false; 
+         else
+           $auto=2;  
             
-         $speed=(int)trim(htmlentities(strip_tags($_POST['speed']),ENT_QUOTES));
-         $pause=(int)trim(htmlentities(strip_tags($_POST['pause']),ENT_QUOTES));
+         $speed=(int)trim(htmlentities(sanitize_text_field($_POST['speed']),ENT_QUOTES));
+         $pause=(int)trim(htmlentities(sanitize_text_field($_POST['pause']),ENT_QUOTES));
          
          if(isset($_POST['circular']))
            $circular=true;  
@@ -272,11 +615,15 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
 
          //$scrollerwidth=$_POST['scrollerwidth'];
          
-         $visible=trim(htmlentities(strip_tags($_POST['visible']),ENT_QUOTES));
+         $visible=intval(htmlentities(sanitize_text_field($_POST['visible']),ENT_QUOTES));
          
-         $min_visible=trim(htmlentities(strip_tags($_POST['min_visible']),ENT_QUOTES));
+         $min_visible=intval(htmlentities(sanitize_text_field($_POST['min_visible']),ENT_QUOTES));
 
-        
+         $show_caption=intval(htmlentities(sanitize_text_field($_POST['show_caption'],ENT_QUOTES)));  
+
+         $show_pager=intval(htmlentities(sanitize_text_field($_POST['show_pager'],ENT_QUOTES)));  
+
+            
          if(isset($_POST['pauseonmouseover']))
            $pauseonmouseover=true;  
          else 
@@ -287,16 +634,19 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
          else 
           $linkimage=false;
          
-         $scroll=trim(htmlentities(strip_tags($_POST['scroll']),ENT_QUOTES));
+         $scroll=intval(htmlentities(sanitize_text_field($_POST['scroll']),ENT_QUOTES));
          
          if($scroll=="")
           $scroll=1;
          
-         $imageMargin=(int) trim(htmlentities(strip_tags($_POST['imageMargin']),ENT_QUOTES));
-         $imageheight=(int) trim(htmlentities(strip_tags($_POST['imageheight']),ENT_QUOTES));
-         $imagewidth=(int)  trim(htmlentities(strip_tags($_POST['imagewidth']),ENT_QUOTES));
+         $imageMargin=(int) trim(htmlentities(sanitize_text_field($_POST['imageMargin']),ENT_QUOTES));
+         $imageheight=(int) trim(htmlentities(sanitize_text_field($_POST['imageheight']),ENT_QUOTES));
+         $imagewidth=(int)  trim(htmlentities(sanitize_text_field($_POST['imagewidth']),ENT_QUOTES));
          
-         $scollerBackground=trim(htmlentities(strip_tags($_POST['scollerBackground']),ENT_QUOTES));
+         $scollerBackground=trim(htmlentities(sanitize_text_field($_POST['scollerBackground']),ENT_QUOTES));
+
+         $lightbox_engine=isset($_POST['lightbox_engine']) && $_POST['lightbox_engine']=='legacy' ? 'legacy' : 'modern';
+         $slider_engine=isset($_POST['slider_engine']) && $_POST['slider_engine']=='legacy' ? 'legacy' : 'modern';
          
          $options=array();
          $options['pauseonmouseover']=$pauseonmouseover;  
@@ -313,12 +663,16 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
          $options['scroll']=$scroll;  
          $options['resizeImages']=1;  
          $options['scollerBackground']=$scollerBackground;  
+         $options['show_caption']=$show_caption;  
+         $options['show_pager']=$show_pager;  
+         $options['lightbox_engine']=$lightbox_engine;  
+         $options['slider_engine']=$slider_engine;  
         
          
          $settings=update_option('responsive_video_gallery_slider_settings',$options); 
          $responsive_video_gallery_plus_lightbox_messages=array();
          $responsive_video_gallery_plus_lightbox_messages['type']='succ';
-         $responsive_video_gallery_plus_lightbox_messages['message']='Settings saved successfully.';
+         $responsive_video_gallery_plus_lightbox_messages['message']=__('Settings saved successfully.','wp-responsive-video-gallery-with-lightbox');
          update_option('responsive_video_gallery_plus_lightbox_messages', $responsive_video_gallery_plus_lightbox_messages);
 
         
@@ -331,16 +685,6 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
    <div id="post-body" class="metabox-holder columns-2" >  
       <div id="post-body-content">
           <div class="wrap">
-              <table><tr><td><a href="https://twitter.com/FreeAdsPost" class="twitter-follow-button" data-show-count="false" data-size="large" data-show-screen-name="false">Follow @FreeAdsPost</a>
-                          <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script></td>
-                      <td>
-                          <a target="_blank" title="Donate" href="http://www.i13websolution.com/donate-wordpress_image_thumbnail.php">
-                              <img id="help us for free plugin" height="30" width="90" src="<?php echo plugins_url( 'images/paypaldonate.jpg', __FILE__ ) ;?>" border="0" alt="help us for free plugin" title="help us for free plugin">
-                          </a>
-                      </td>
-                  </tr>
-              </table>
-<span><h3 style="color: blue;"><a target="_blank" href="http://www.i13websolution.com/wordpress-responsive-video-gallery-with-lightbox-pro.html">UPGRADE TO PRO VERSION</a></h3></span>
               <?php
                   $messages=get_option('responsive_video_gallery_plus_lightbox_messages'); 
                   $type='';
@@ -353,14 +697,13 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
                   }  
 
 
-                  if($type=='err'){ echo "<div class='errMsg'>"; echo $message; echo "</div>";}
-                  else if($type=='succ'){ echo "<div class='succMsg'>"; echo $message; echo "</div>";}
-
-
+                 if(trim($type)=='err'){ echo "<div class='notice notice-error is-dismissible'><p>"; echo $message; echo "</p></div>";}
+                 else if(trim($type)=='succ'){ echo "<div class='notice notice-success is-dismissible'><p>"; echo $message; echo "</p></div>";}
+       
                   update_option('responsive_video_gallery_plus_lightbox_messages', array());     
               ?>      
               
-              <h2>Gallery Slider Settings</h2>
+              <h2><?php echo __('Gallery Slider Settings','wp-responsive-video-gallery-with-lightbox');?></h2>
               <div id="poststuff">
                   <div id="post-body" class="metabox-holder columns-2">
                       <div id="post-body-content">
@@ -368,12 +711,13 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
 
                              
                               <div class="stuffbox" id="namediv" style="width:100%;">
-                                  <h3><label>Auto Scroll ?</label></h3>
+                                  <h3><label><?php echo __('Auto Scroll ?','wp-responsive-video-gallery-with-lightbox');?></label></h3>
                                   <div class="inside">
                                       <table>
                                           <tr>
                                               <td>
-                                                  <input style="width:20px;" type='radio' <?php if($settings['auto']==true){echo "checked='checked'";}?>  name='isauto' value='auto' >Auto &nbsp;<input style="width:20px;" type='radio' name='isauto' <?php if($settings['auto']==false){echo "checked='checked'";} ?> value='manuall' >Scroll By Left & Right Arrow
+                                                  <?php $settings['auto']=(int)$settings['auto'];?>
+                                                  <input style="width:20px;" type='radio' <?php if($settings['auto']==1){echo "checked='checked'";}?>  name='isauto' value='auto' ><?php echo __('Auto','wp-responsive-video-gallery-with-lightbox');?> &nbsp;<input style="width:20px;" type='radio' name='isauto' <?php if($settings['auto']==0){echo "checked='checked'";} ?> value='manuall' ><?php echo __('Scroll By Left & Right Arrow','wp-responsive-video-gallery-with-lightbox');?> &nbsp; &nbsp;<input style="width:20px;" type='radio' name='isauto' <?php if($settings['auto']==2){echo "checked='checked'";} ?> value='both' ><?php echo __('Scroll Auto With Arrow','wp-responsive-video-gallery-with-lightbox');?>
                                                   <div style="clear:both"></div>
                                                   <div></div>
                                               </td>
@@ -383,7 +727,7 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
                                   </div>
                               </div>
                               <div class="stuffbox" id="namediv" style="width:100%;">
-                                  <h3><label >Speed</label></h3>
+                                  <h3><label ><?php echo __('Speed','wp-responsive-video-gallery-with-lightbox');?></label></h3>
                                   <div class="inside">
                                       <table>
                                           <tr>
@@ -399,7 +743,7 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
                                   </div>
                               </div>
                               <div class="stuffbox" id="namediv" style="width:100%;">
-                                  <h3><label >Pause</label></h3>
+                                  <h3><label ><?php echo __('Pause','wp-responsive-video-gallery-with-lightbox');?></label></h3>
                                   <div class="inside">
                                       <table>
                                           <tr>
@@ -410,17 +754,17 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
                                               </td>
                                           </tr>
                                       </table>
-                                      <div style="clear:both">The amount of time (in ms) between each auto transition</div>
+                                      <div style="clear:both"><?php echo __('The amount of time (in ms) between each auto transition','wp-responsive-video-gallery-with-lightbox');?></div>
 
                                   </div>
                               </div>
                               <div class="stuffbox" id="namediv" style="width:100%;">
-                                  <h3><label >Circular Slider ?</label></h3>
+                                  <h3><label ><?php echo __('Circular Slider ?','wp-responsive-video-gallery-with-lightbox');?></label></h3>
                                   <div class="inside">
                                       <table>
                                           <tr>
                                               <td>
-                                                  <input type="checkbox" id="circular" size="30" name="circular" value="" <?php if($settings['circular']==true){echo "checked='checked'";} ?> style="width:20px;">&nbsp;Circular Slider ? 
+                                                  <input type="checkbox" id="circular" size="30" name="circular" value="" <?php if($settings['circular']==true){echo "checked='checked'";} ?> style="width:20px;">&nbsp;<?php echo __('Circular Slider ?','wp-responsive-video-gallery-with-lightbox');?>
                                                   <div style="clear:both"></div>
                                                   <div></div>
                                               </td>
@@ -431,7 +775,43 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
                                   </div>
                               </div>
                               <div class="stuffbox" id="namediv" style="width:100%;">
-                                  <h3><label>Slider Background color</label></h3>
+                                  <h3><label><?php echo __('Lightbox Engine','wp-responsive-video-gallery-with-lightbox');?></label></h3>
+                                  <div class="inside">
+                                      <table>
+                                          <tr>
+                                              <td>
+                                                  <input type="radio" id="lightbox_engine_modern" name="lightbox_engine" value="modern" <?php if(!isset($settings['lightbox_engine']) || $settings['lightbox_engine']=='modern'){echo "checked='checked'";} ?> style="width:20px;">&nbsp;<label for="lightbox_engine_modern"><?php echo __('Modern (recommended) - lightweight, no jQuery required, stops video playback properly on close','wp-responsive-video-gallery-with-lightbox');?></label>
+                                                  <div style="clear:both"></div>
+                                                  <input type="radio" id="lightbox_engine_legacy" name="lightbox_engine" value="legacy" <?php if(isset($settings['lightbox_engine']) && $settings['lightbox_engine']=='legacy'){echo "checked='checked'";} ?> style="width:20px;">&nbsp;<label for="lightbox_engine_legacy"><?php echo __('Legacy (FancyBox) - the original lightbox, kept for sites already using it','wp-responsive-video-gallery-with-lightbox');?></label>
+                                                  <div style="clear:both"></div>
+                                                  <div></div>
+                                              </td>
+                                          </tr>
+                                      </table>
+                                      <div style="clear:both"></div>
+
+                                  </div>
+                              </div>
+                              <div class="stuffbox" id="namediv" style="width:100%;">
+                                  <h3><label><?php echo __('Slider Engine','wp-responsive-video-gallery-with-lightbox');?></label></h3>
+                                  <div class="inside">
+                                      <table>
+                                          <tr>
+                                              <td>
+                                                  <input type="radio" id="slider_engine_modern" name="slider_engine" value="modern" <?php if(!isset($settings['slider_engine']) || $settings['slider_engine']=='modern'){echo "checked='checked'";} ?> style="width:20px;">&nbsp;<label for="slider_engine_modern"><?php echo __('Modern (recommended) - lightweight, no jQuery required for the slider itself, touch/swipe friendly','wp-responsive-video-gallery-with-lightbox');?></label>
+                                                  <div style="clear:both"></div>
+                                                  <input type="radio" id="slider_engine_legacy" name="slider_engine" value="legacy" <?php if(isset($settings['slider_engine']) && $settings['slider_engine']=='legacy'){echo "checked='checked'";} ?> style="width:20px;">&nbsp;<label for="slider_engine_legacy"><?php echo __('Legacy (bxSlider) - the original slider engine, kept for sites already using it','wp-responsive-video-gallery-with-lightbox');?></label>
+                                                  <div style="clear:both"></div>
+                                                  <div></div>
+                                              </td>
+                                          </tr>
+                                      </table>
+                                      <div style="clear:both"></div>
+
+                                  </div>
+                              </div>
+                              <div class="stuffbox" id="namediv" style="width:100%;">
+                                  <h3><label><?php echo __('Slider Background color','wp-responsive-video-gallery-with-lightbox');?></label></h3>
                                   <div class="inside">
                                       <table>
                                           <tr>
@@ -447,41 +827,41 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
                                   </div>
                               </div>
                               <div class="stuffbox" id="namediv" style="width:100%;">
-                                  <h3><label>Max Visible</label></h3>
+                                  <h3><label><?php echo __('Max Visible','wp-responsive-video-gallery-with-lightbox');?></label></h3>
                                   <div class="inside">
                                       <table>
                                           <tr>
                                               <td>
                                                   <input type="text" id="visible" size="30" name="visible" value="<?php echo $settings['visible']; ?>" style="width:100px;">
-                                                  <div style="clear:both">This will decide your slider width automatically</div>
+                                                  <div style="clear:both"><?php echo __('This will decide your slider width automatically','wp-responsive-video-gallery-with-lightbox');?></div>
                                                   <div></div>
                                               </td>
                                           </tr>
                                       </table>
-                                      specifies the number of items visible at all times within the slider.
+                                      <?php echo __('Specify the number of items visible at all times within the slider.','wp-responsive-video-gallery-with-lightbox');?>
                                       <div style="clear:both"></div>
 
                                   </div>
                               </div>
                               <div class="stuffbox" id="namediv" style="width:100%;">
-                                 <h3><label>Min Visible</label></h3>
+                                 <h3><label><?php echo __('Min Visible','wp-responsive-video-gallery-with-lightbox');?></label></h3>
                                 <div class="inside">
                                      <table>
                                        <tr>
                                          <td>
                                            <input type="text" id="min_visible" size="30" name="min_visible" value="<?php echo $settings['min_visible']; ?>" style="width:100px;">
-                                           <div style="clear:both">This will decide your slider width in responsive layout</div>
+                                           <div style="clear:both"><?php echo __('This will decide your slider width in responsive layout','wp-responsive-video-gallery-with-lightbox');?></div>
                                            <div></div>
                                          </td>
                                        </tr>
                                      </table>
-                                     The responsive layout decide by slider itself using min visible.
+                                     <?php echo __('The responsive layout decide by slider itself using min visible.','wp-responsive-video-gallery-with-lightbox');?>
                                      <div style="clear:both"></div>
                                    
                                  </div>
                               </div>
                               <div class="stuffbox" id="namediv" style="width:100%;">
-                                  <h3><label>Scroll</label></h3>
+                                  <h3><label><?php echo __('Scroll','wp-responsive-video-gallery-with-lightbox');?></label></h3>
                                   <div class="inside">
                                       <table>
                                           <tr>
@@ -492,12 +872,12 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
                                               </td>
                                           </tr>
                                       </table>
-                                      You can specify the number of items to scroll when you click the next or prev buttons.
+                                      <?php echo __('You can specify the number of items to scroll when you click the next or prev buttons.','wp-responsive-video-gallery-with-lightbox');?>
                                       <div style="clear:both"></div>
                                   </div>
                               </div>
                               <div class="stuffbox" id="namediv" style="width:100%;">
-                                  <h3><label>Pause On Mouse Over ?</label></h3>
+                                  <h3><label><?php echo __('Pause On Mouse Over ?','wp-responsive-video-gallery-with-lightbox');?></label></h3>
                                   <div class="inside">
                                       <table>
                                           <tr>
@@ -513,7 +893,7 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
                               </div>
                             
                               <div class="stuffbox" id="namediv" style="width:100%;">
-                                  <h3><label>Image Height</label></h3>
+                                  <h3><label><?php echo __('Image Height','wp-responsive-video-gallery-with-lightbox');?></label></h3>
                                   <div class="inside">
                                       <table>
                                           <tr>
@@ -529,7 +909,7 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
                                   </div>
                               </div>
                               <div class="stuffbox" id="namediv" style="width:100%;">
-                                  <h3><label>Image Width</label></h3>
+                                  <h3><label><?php echo __('Image Width','wp-responsive-video-gallery-with-lightbox');?></label></h3>
                                   <div class="inside">
                                       <table>
                                           <tr>
@@ -545,13 +925,13 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
                                   </div>
                               </div>
                               <div class="stuffbox" id="namediv" style="width:100%;">
-                                  <h3><label>Image Margin</label></h3>
+                                  <h3><label><?php echo __('Image Margin','wp-responsive-video-gallery-with-lightbox');?></label></h3>
                                   <div class="inside">
                                       <table>
                                           <tr>
                                               <td>
                                                   <input type="text" id="imageMargin" size="30" name="imageMargin" value="<?php echo $settings['imageMargin']; ?>" style="width:100px;">
-                                                  <div style="clear:both;padding-top:5px">Gap between two images </div>
+                                                  <div style="clear:both;padding-top:5px"><?php echo __('Gap between two images','wp-responsive-video-gallery-with-lightbox');?> </div>
                                                   <div></div>
                                               </td>
                                           </tr>
@@ -560,17 +940,45 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
                                       <div style="clear:both"></div>
                                   </div>
                               </div>
-                              
+                             <div class="stuffbox" id="namediv" style="width:100%;">
+                                  <h3><label><?php echo __( 'Show Caption?','wp-responsive-video-gallery-with-lightbox');?></label></h3>
+                                 <div class="inside">
+                                      <table>
+                                        <tr>
+                                          <td>
+                                            <input style="width:20px;" type='radio' <?php if($settings['show_caption']==true){echo "checked='checked'";}?>  name='show_caption' value='1' ><?php echo __( 'Yes','wp-responsive-video-gallery-with-lightbox');?> &nbsp;<input style="width:20px;" type='radio' name='show_caption' <?php if($settings['show_caption']==false){echo "checked='checked'";} ?> value='0' ><?php echo __( 'No','wp-responsive-video-gallery-with-lightbox');?>
+                                            <div style="clear:both"></div>
+                                            <div></div>
+                                          </td>
+                                        </tr>
+                                      </table>
+                                      <div style="clear:both"></div>
+                                  </div>
+                               </div>
+                                <div class="stuffbox" id="namediv" style="width:100%;">
+                                  <h3><label><?php echo __( 'Show Pager?','wp-responsive-video-gallery-with-lightbox');?></label></h3>
+                                 <div class="inside">
+                                      <table>
+                                        <tr>
+                                          <td>
+                                            <input style="width:20px;" type='radio' <?php if($settings['show_pager']==true){echo "checked='checked'";}?>  name='show_pager' value='1' ><?php echo __( 'Yes','wp-responsive-video-gallery-with-lightbox');?> &nbsp;<input style="width:20px;" type='radio' name='show_pager' <?php if($settings['show_pager']==false){echo "checked='checked'";} ?> value='0' ><?php echo __( 'No','wp-responsive-video-gallery-with-lightbox');?>
+                                            <div style="clear:both"></div>
+                                            <div></div>
+                                          </td>
+                                        </tr>
+                                      </table>
+                                      <div style="clear:both"></div>
+                                  </div>
+                               </div>
                               <?php wp_nonce_field('action_image_add_edit', 'add_edit_image_nonce'); ?> 
-                              <input type="submit"  name="btnsave" id="btnsave" value="Save Changes" class="button-primary">&nbsp;&nbsp;<input type="button" name="cancle" id="cancle" value="Cancel" class="button-primary" onclick="location.href='admin.php?page=responsive_video_gallery_with_lightbox_video_management'">
+                              <input type="submit"  name="btnsave" id="btnsave" value="<?php echo __('Sage Changes','wp-responsive-video-gallery-with-lightbox');?>" class="button-primary">&nbsp;&nbsp;<input type="button" name="cancle" id="cancle" value="<?php echo __('Cancel','wp-responsive-video-gallery-with-lightbox');?>" class="button-primary" onclick="location.href='admin.php?page=responsive_video_gallery_with_lightbox_video_management'">
 
                           </form> 
                           <script type="text/javascript">
 
-                              var $n = jQuery.noConflict();  
-                              $n(document).ready(function() {
+                              jQuery(document).ready(function() {
 
-                                      $n("#scrollersettiings").validate({
+                                      jQuery("#scrollersettiings").validate({
                                               rules: {
                                                   isauto: {
                                                       required:true
@@ -632,7 +1040,7 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
 
                                       })
                                       
-                                     $n('#scollerBackground').wpColorPicker();
+                                     jQuery('#scollerBackground').wpColorPicker();
                                            
                               });
 
@@ -645,22 +1053,11 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
       </div>
  <div id="postbox-container-1" class="postbox-container" > 
 
-          <div class="postbox"> 
-              <h3 class="hndle"><span></span>Access All Themes In One Price</h3> 
+          <div class="postbox">
               <div class="inside">
-                  <center><a href="http://www.elegantthemes.com/affiliates/idevaffiliate.php?id=11715_0_1_10" target="_blank"><img border="0" src="<?php echo plugins_url( 'images/300x250.gif', __FILE__ ) ;?>" width="250" height="250"></a></center>
-
-                  <div style="margin:10px 5px">
-
-                  </div>
-              </div></div>
-          <div class="postbox"> 
-              <h3 class="hndle"><span></span>Best WordPress Themes</h3> 
-              <div class="inside">
-                  <center><a href="https://mythemeshop.com/?ref=nik_gandhi007" target="_blank"><img src="<?php echo plugins_url( 'images/300x250.png', __FILE__ ) ;?>" width="250" height="250" border="0"></a></center>
-                  <div style="margin:10px 5px">
-                  </div>
-              </div></div>
+                  <?php echo rvg_render_pro_upsell_postbox(); ?>
+              </div>
+          </div>
 
       </div>      
      
@@ -671,6 +1068,7 @@ function responsive_video_gallery_plus_lightbox_add_admin_init() {
    } 
    
 function responsive_video_gallery_with_lightbox_video_management_func() {
+    
 	$action = 'gridview';
 	global $wpdb;
 	
@@ -678,13 +1076,20 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 	
 	if (isset ( $_GET ['action'] ) and $_GET ['action'] != '') {
 		
-		$action = trim ( $_GET ['action'] );
+		$action = sanitize_text_field ( $_GET ['action'] );
 	}
 	?>
 
         <?php
 	if (strtolower ( $action ) == strtolower ( 'gridview' )) {
 		
+            
+              if ( ! current_user_can( 'rvg_responsive_video_gallery_view_video' ) ) {
+
+                    wp_die( __( "Access Denied", "wp-responsive-video-gallery-with-lightbox" ) );
+
+               }
+
 		$wpcurrentdir = dirname ( __FILE__ );
 		$wpcurrentdir = str_replace ( "\\", "/", $wpcurrentdir );
 		
@@ -692,88 +1097,8 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 		$baseurl = $uploads ['baseurl'];
 		$baseurl .= '/wp-responsive-video-gallery-with-lightbox/';
 		?> 
-            <div class="wrap">
-		<style type="text/css">
-                    .pagination {
-                            clear: both;
-                            padding: 20px 0;
-                            position: relative;
-                            font-size: 11px;
-                            line-height: 13px;
-                    }
-
-                    .pagination span, .pagination a {
-                            display: block;
-                            float: left;
-                            margin: 2px 2px 2px 0;
-                            padding: 6px 9px 5px 9px;
-                            text-decoration: none;
-                            width: auto;
-                            color: #fff;
-                            background: #555;
-                    }
-
-                    .pagination a:hover {
-                            color: #fff;
-                            background: #3279BB;
-                    }
-
-                    .pagination .current {
-                            padding: 6px 9px 5px 9px;
-                            background: #3279BB;
-                            color: #fff;
-                    }
-                    </style>
-		<!--[if !IE]><!-->
-		<style type="text/css">
-                @media only screen and (max-width: 800px) {
-                        /* Force table to not be like tables anymore */
-                        #no-more-tables table, #no-more-tables thead, #no-more-tables tbody,
-                                #no-more-tables th, #no-more-tables td, #no-more-tables tr {
-                                display: block;
-                        }
-
-                        /* Hide table headers (but not display: none;, for accessibility) */
-                        #no-more-tables thead tr {
-                                position: absolute;
-                                top: -9999px;
-                                left: -9999px;
-                        }
-                        #no-more-tables tr {
-                                border: 1px solid #ccc;
-                        }
-                        #no-more-tables td {
-                                /* Behave  like a "row" */
-                                border: none;
-                                border-bottom: 1px solid #eee;
-                                position: relative;
-                                padding-left: 50%;
-                                white-space: normal;
-                                text-align: left;
-                        }
-                        #no-more-tables td:before {
-                                /* Now like a table header */
-                                position: absolute;
-                                /* Top/left values mimic padding */
-                                top: 6px;
-                                left: 6px;
-                                width: 45%;
-                                padding-right: 10px;
-                                white-space: nowrap;
-                                text-align: left;
-                                font-weight: bold;
-                        }
-
-                        /*
-                                        Label the data
-                                        */
-                        #no-more-tables td:before {
-                                content: attr(data-title);
-                        }
-                }
-                </style>
-		<!--<![endif]-->
-             <?php
+          <div class="wrap">
+	   <?php
 		$messages = get_option ( 'responsive_video_gallery_plus_lightbox_messages' );
 		$type = '';
 		$message = '';
@@ -783,106 +1108,215 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 			$message = $messages ['message'];
 		}
 		
-		if ($type == 'err') {
-			echo "<div class='errMsg'>";
-			echo $message;
-			echo "</div>";
-		} else if ($type == 'succ') {
-			echo "<div class='succMsg'>";
-			echo $message;
-			echo "</div>";
-		}
+		 if(trim($type)=='err'){ echo "<div class='notice notice-error is-dismissible'><p>"; echo $message; echo "</p></div>";}
+                 else if(trim($type)=='succ'){ echo "<div class='notice notice-success is-dismissible'><p>"; echo $message; echo "</p></div>";}
+       
 		
 		update_option ( 'responsive_video_gallery_plus_lightbox_messages', array () );
 		?>
                 <div id="poststuff" > 
-         <div id="post-body" class="metabox-holder columns-2" >  
-          <div id="post-body-content">
-          <div class="wrap">
-                <span><h3 style="color: blue;"><a target="_blank" href="http://www.i13websolution.com/wordpress-responsive-video-gallery-with-lightbox-pro.html">UPGRADE TO PRO VERSION</a></h3></span>
-                <div style="width: 100%;">
+                    <div id="post-body" class="metabox-holder columns-2" >  
+                     <div id="post-body-content">
+                     <div class="wrap">
+                           <div style="width: 100%;">
 			<div style="float: left; width: 100%;">
 				<div class="icon32 icon32-posts-post" id="icon-edit">
 					<br>
 				</div>
 				<h2>
-					Videos<a class="button add-new-h2"
-						href="admin.php?page=responsive_video_gallery_with_lightbox_video_management&action=addedit">Add
-						New</a>
+					<?php echo __('Videos','wp-responsive-video-gallery-with-lightbox');?><a class="button add-new-h2" href="admin.php?page=responsive_video_gallery_with_lightbox_video_management&action=addedit"><?php echo __('Add New','wp-responsive-video-gallery-with-lightbox');?></a>
 				</h2>
 				<br />
 
 				<form method="POST"
 					action="admin.php?page=responsive_video_gallery_with_lightbox_video_management&action=deleteselected"
-					id="posts-filter">
+					id="posts-filter" onkeypress="return event.keyCode != 13;">
 					<div class="alignleft actions">
 						<select name="action_upper" id="action_upper">
-							<option selected="selected" value="-1">Bulk Actions</option>
-							<option value="delete">delete</option>
-						</select> <input type="submit" value="Apply"
+							<option selected="selected" value="-1"><?php echo __('Bulk Actions','wp-responsive-video-gallery-with-lightbox');?></option>
+							<option value="delete"><?php echo __('Delete','wp-responsive-video-gallery-with-lightbox');?></option>
+						</select> <input type="submit" value="<?php echo __('Apply','wp-responsive-video-gallery-with-lightbox');?>"
 							class="button-secondary action" id="deleteselected"
 							name="deleteselected" onclick="return confirmDelete_bulk();">
 					</div>
 					<br class="clear">
+                                        
+                                                <?php
+                                                    $setacrionpage='admin.php?page=responsive_video_gallery_with_lightbox_video_management';
+
+                                                    if(isset($_GET['order_by']) and $_GET['order_by']!=""){
+                                                      $setacrionpage.='&order_by='.esc_html(sanitize_text_field($_GET['order_by']));   
+                                                    }
+
+                                                    if(isset($_GET['order_pos']) and $_GET['order_pos']!=""){
+                                                     $setacrionpage.='&order_pos='.esc_html(sanitize_text_field($_GET['order_pos']));   
+                                                    }
+
+                                                    $seval="";
+                                                    if(isset($_GET['search_term']) and $_GET['search_term']!=""){
+                                                     $seval=esc_html(sanitize_text_field($_GET['search_term']));   
+                                                    }
+
+                                                ?>
                                                 <?php
 							global $wpdb;
+                                                        
 							$settings=get_option('responsive_video_gallery_slider_settings');
 							
 							$visibleImages = $settings ['visible'];
-							$query = "SELECT * FROM " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox  order by video_order,createdon desc";
-							$rows = $wpdb->get_results ( $query, 'ARRAY_A' );
-							$rowCount = sizeof ( $rows );
+                                                        
+                                                         $order_by='id';
+                                                        $order_pos="asc";
+
+                                                        $allowed_order_by = array('id','vtype','videotitle','createdon');
+                                                        if(isset($_GET['order_by']) and in_array(sanitize_text_field($_GET['order_by']), $allowed_order_by, true)){
+
+                                                           $order_by=sanitize_text_field($_GET['order_by']);
+                                                        }
+
+                                                        if(isset($_GET['order_pos']) and in_array(strtolower(sanitize_text_field($_GET['order_pos'])), array('asc','desc'), true)){
+
+                                                           $order_pos=strtolower(sanitize_text_field($_GET['order_pos']));
+                                                        }
+                                                        $search_term_='';
+                                                        if(isset($_GET['search_term'])){
+
+                                                           $search_term_='&search_term='.esc_html(sanitize_text_field($_GET['search_term']));
+                                                        }
+                                                         $search_term='';
+                                                        if(isset($_GET['search_term'])){
+
+                                                           $search_term= sanitize_text_field($_GET['search_term']);
+                                                        }
+                                                        
+							$query = "SELECT * FROM " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox ";
+							$querycount = "SELECT count(*) FROM " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox ";
+                                                        if($search_term!=''){
+                                                            $like = '%' . $wpdb->esc_like($search_term) . '%';
+                                                            $query.= $wpdb->prepare(" where id like %s or videotitle like %s ", $like, $like);
+                                                            $querycount.= $wpdb->prepare(" where id like %s or videotitle like %s ", $like, $like);
+                                                          }
+
+                                                         // $order_by/$order_pos are restricted to the whitelists above, so safe to
+                                                         // concatenate directly - placeholders can't be used for identifiers/keywords.
+                                                         $query.=" order by $order_by $order_pos";
+                                                         $rowCount=$wpdb->get_var($querycount);
+                                                         
+                                                         
+                                                          
+							$query1 = "SELECT count(*) FROM " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox ";
+							$rowsCount=$wpdb->get_var($query1);
+							
 							?>
-					                            <?php if ($rowCount < $visibleImages) { ?>
-					                                <h4 style="color: green"> Current slider setting - Total visible Videos <?php echo $visibleImages; ?></h4>
-										<h4 style="color: green">Please add atleast <?php echo $visibleImages; ?> videos</h4>
+					                            <?php if ($rowsCount < $visibleImages) { ?>
+                                                                                <h4 style="color: green"> <?php echo __('Current slider setting','wp-responsive-video-gallery-with-lightbox');?> - <?php echo __('Total visible Videos','wp-responsive-video-gallery-with-lightbox');?> <?php echo $visibleImages; ?></h4>
+										<h4 style="color: green"><?php echo __('Please add atleast','wp-responsive-video-gallery-with-lightbox');?> <?php echo $visibleImages; ?> <?php echo __('Videos','wp-responsive-video-gallery-with-lightbox');?></h4>
 					                                <?php
 							} else {
 								echo "<br/>";
 							}
 							?>
+                                                                                
+                                            <div style="padding-top:5px;padding-bottom:5px">
+                                                <b><?php echo __( 'Search','full-width-responsive-slider-wp');?> : </b>
+                                                  <input type="text" value="<?php echo $seval;?>" id="search_term" name="search_term">&nbsp;
+                                                  <input type='button'  value='<?php echo __( 'Search','wp-responsive-video-gallery-with-lightbox');?>' name='searchusrsubmit' class='button-primary' id='searchusrsubmit' onclick="SearchredirectTO();" >&nbsp;
+                                                  <input type='button'  value='<?php echo __( 'Reset Search','wp-responsive-video-gallery-with-lightbox');?>' name='searchreset' class='button-primary' id='searchreset' onclick="ResetSearch();" >
+                                            </div>  
+                                            <script type="text/javascript" >
+                                               
+                                                jQuery('#search_term').on("keyup", function(e) {
+                                                       if (e.which == 13) {
+
+                                                           SearchredirectTO();
+                                                       }
+                                                  });   
+                                             function SearchredirectTO(){
+                                               var redirectto='<?php echo $setacrionpage; ?>';
+                                               var searchval=jQuery('#search_term').val();
+                                               redirectto=redirectto+'&search_term='+jQuery.trim(encodeURIComponent(searchval));  
+                                               window.location.href=redirectto;
+                                             }
+                                            function ResetSearch(){
+
+                                                 var redirectto='<?php echo $setacrionpage; ?>';
+                                                 window.location.href=redirectto;
+                                                 exit;
+                                            }
+                                            </script>      
                                             <div id="no-more-tables">
 						<table cellspacing="0" id="gridTbl"
 							class="table-bordered table-striped table-condensed cf">
 							<thead>
 								<tr>
-									<th class="manage-column column-cb check-column" scope="col"><input
-										type="checkbox"></th>
-									<th>Id</th>
-									<th><span>Video Type</span></th>
-									<th><span>Title</span></th>
+									<th class="manage-column column-cb check-column" scope="col"><input type="checkbox"></th>
+									<?php if($order_by=="id" and $order_pos=="asc"):?>
+                                                                            <th><a href="<?php echo $setacrionpage;?>&order_by=id&order_pos=desc<?php echo $search_term_;?>"><?php echo __('Id','wp-responsive-video-gallery-with-lightbox');?><img style="vertical-align:middle" src="<?php echo plugins_url('/images/desc.png', __FILE__); ?>"/></a></th>
+                                                                       <?php else:?>
+                                                                           <?php if($order_by=="id"):?>
+                                                                       <th><a href="<?php echo $setacrionpage;?>&order_by=id&order_pos=asc<?php echo $search_term_;?>"><?php echo __('Id','wp-responsive-video-gallery-with-lightbox');?><img style="vertical-align:middle" src="<?php echo plugins_url('/images/asc.png', __FILE__); ?>"/></a></th>
+                                                                           <?php else:?>
+                                                                               <th><a href="<?php echo $setacrionpage;?>&order_by=id&order_pos=asc<?php echo $search_term_;?>"><?php echo __('Id','wp-responsive-video-gallery-with-lightbox');?></a></th>
+                                                                           <?php endif;?>    
+                                                                       <?php endif;?>  
+									<?php if($order_by=="vtype" and $order_pos=="asc"):?>
+                                                                            <th><a href="<?php echo $setacrionpage;?>&order_by=vtype&order_pos=desc<?php echo $search_term_;?>"><?php echo __('Video Type','wp-responsive-video-gallery-with-lightbox');?><img style="vertical-align:middle" src="<?php echo plugins_url('/images/desc.png', __FILE__); ?>"/></a></th>
+                                                                       <?php else:?>
+                                                                           <?php if($order_by=="vtype"):?>
+                                                                       <th><a href="<?php echo $setacrionpage;?>&order_by=vtype&order_pos=asc<?php echo $search_term_;?>"><?php echo __('Video Type','wp-responsive-video-gallery-with-lightbox');?><img style="vertical-align:middle" src="<?php echo plugins_url('/images/asc.png', __FILE__); ?>"/></a></th>
+                                                                           <?php else:?>
+                                                                               <th><a href="<?php echo $setacrionpage;?>&order_by=vtype&order_pos=asc<?php echo $search_term_;?>"><?php echo __('Video Type','wp-responsive-video-gallery-with-lightbox');?></a></th>
+                                                                           <?php endif;?>    
+                                                                       <?php endif;?> 
+                                                                               
+									<?php if($order_by=="videotitle" and $order_pos=="asc"):?>
+                                                                            <th><a href="<?php echo $setacrionpage;?>&order_by=videotitle&order_pos=desc<?php echo $search_term_;?>"><?php echo __('Title','wp-responsive-video-gallery-with-lightbox');?><img style="vertical-align:middle" src="<?php echo plugins_url('/images/desc.png', __FILE__); ?>"/></a></th>
+                                                                       <?php else:?>
+                                                                           <?php if($order_by=="videotitle"):?>
+                                                                       <th><a href="<?php echo $setacrionpage;?>&order_by=videotitle&order_pos=asc<?php echo $search_term_;?>"><?php echo __('Title','wp-responsive-video-gallery-with-lightbox');?><img style="vertical-align:middle" src="<?php echo plugins_url('/images/asc.png', __FILE__); ?>"/></a></th>
+                                                                           <?php else:?>
+                                                                               <th><a href="<?php echo $setacrionpage;?>&order_by=videotitle&order_pos=asc<?php echo $search_term_;?>"><?php echo __('Title','wp-responsive-video-gallery-with-lightbox');?></a></th>
+                                                                           <?php endif;?>    
+                                                                       <?php endif;?>  
 									<th><span></span></th>
-									<th><span>Published On</span></th>
-									<th><span>Edit</span></th>
-									<th><span>Delete</span></th>
+                                                                        <?php if($order_by=="createdon" and $order_pos=="asc"):?>
+                                                                            <th><a href="<?php echo $setacrionpage;?>&order_by=createdon&order_pos=desc<?php echo $search_term_;?>"><?php echo __('Published On','wp-responsive-video-gallery-with-lightbox');?><img style="vertical-align:middle" src="<?php echo plugins_url('/images/desc.png', __FILE__); ?>"/></a></th>
+                                                                        <?php else:?>
+                                                                            <?php if($order_by=="createdon"):?>
+                                                                        <th><a href="<?php echo $setacrionpage;?>&order_by=createdon&order_pos=asc<?php echo $search_term_;?>"><?php echo __('Published On','wp-responsive-video-gallery-with-lightbox');?><img style="vertical-align:middle" src="<?php echo plugins_url('/images/asc.png', __FILE__); ?>"/></a></th>
+                                                                            <?php else:?>
+                                                                                <th><a href="<?php echo $setacrionpage;?>&order_by=createdon&order_pos=asc<?php echo $search_term_;?>"><?php echo __('Published On','wp-responsive-video-gallery-with-lightbox');?></a></th>
+                                                                            <?php endif;?>    
+                                                                        <?php endif;?> 
+									<th><span><?php echo __('Edit','wp-responsive-video-gallery-with-lightbox');?></span></th>
+									<th><span><?php echo __('Delete','wp-responsive-video-gallery-with-lightbox');?></span></th>
 								</tr>
 							</thead>
 
 							<tbody id="the-list">
                                                         <?php
-								if (count ( $rows ) > 0) {
+								if ($rowCount > 0) {
 									
 									global $wp_rewrite;
-									$rows_per_page = 15;
+									$rows_per_page = 10;
 									
 									$current = (isset ( $_GET ['paged'] )) ? ((int) htmlentities(strip_tags($_GET ['paged']),ENT_QUOTES)) : 1;
 									$pagination_args = array (
 											'base' => @add_query_arg ( 'paged', '%#%' ),
 											'format' => '',
-											'total' => ceil ( sizeof ( $rows ) / $rows_per_page ),
+											'total' => ceil ( $rowCount / $rows_per_page ),
 											'current' => $current,
 											'show_all' => false,
 											'type' => 'plain' 
 									);
 									
-									$start = ($current - 1) * $rows_per_page;
-									$end = $start + $rows_per_page;
-									$end = (sizeof ( $rows ) < $end) ? sizeof ( $rows ) : $end;
 									$delRecNonce = wp_create_nonce('delete_image');
+                                                                        $offset = ($current - 1) * $rows_per_page;
+                                                                        $query.= $wpdb->prepare(" limit %d, %d", $offset, $rows_per_page);
                                                                         
-									for($i = $start; $i < $end; ++ $i) {
+                                                                        $rows = $wpdb->get_results ( $query ,'ARRAY_A' );
+									foreach($rows as $row) {
 										
-										$row = $rows [$i];
 										
 										$id = $row ['id'];
 										$editlink = "admin.php?page=responsive_video_gallery_with_lightbox_video_management&action=addedit&id=$id";
@@ -891,26 +1325,32 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 										$outputimgmain = $baseurl . $row ['image_name'].'?rand='.  rand(0, 5000);
 										?>
                                                                     <tr valign="top">
-									<td class="alignCenter check-column" data-title="Select Record"><input
-										type="checkbox" value="<?php echo $row['id'] ?>"
-										name="thumbnails[]"></td>
-									<td data-title="Id" class="alignCenter"><?php echo $row['id']; ?></td>
-									<td data-title="Video Type" class="alignCenter"><div>
+									<td class="alignCenter check-column" data-title="<?php echo __('Select Record','wp-responsive-video-gallery-with-lightbox');?>">
+                                                                            <input type="checkbox" value="<?php echo $row['id'] ?>" name="thumbnails[]">
+                                                                        </td>
+									<td data-title="<?php echo __('Id','wp-responsive-video-gallery-with-lightbox');?>" class="alignCenter"><?php echo $row['id']; ?></td>
+									<td data-title="<?php echo __('Video Type','wp-responsive-video-gallery-with-lightbox');?>" class="alignCenter">
+                                                                            <div>
 											<strong><?php echo $row['vtype']; ?></strong>
-										</div></td>
-									   <td data-title="Title" class="alignCenter">
+										</div>
+                                                                        </td>
+									   <td data-title="<?php echo __('Title','wp-responsive-video-gallery-with-lightbox');?>" class="alignCenter">
 									   <div>
 											<strong><?php echo $row['videotitle']; ?></strong>
-										</div></td>
-									<td class="alignCenter"><img
-										src="<?php echo $outputimgmain; ?>" style="width: 50px"
-										height="50px" /></td>
-									<td data-title="Published On" class="alignCenter"><?php echo $row['createdon'] ?></td>
-									<td data-title="Edit" class="alignCenter"><strong><a
-											href='<?php echo $editlink; ?>' title="edit">Edit</a></strong></td>
-									<td data-title="Delete" class="alignCenter"><strong><a
-											href='<?php echo $deletelink; ?>'
-											onclick="return confirmDelete();" title="delete">Delete</a> </strong></td>
+										</div>
+                                                                           </td>
+									<td class="alignCenter">
+                                                                            <img src="<?php echo $outputimgmain; ?>" style="width: 50px" height="50px" />
+                                                                        </td>
+									<td data-title="<?php echo __('Published On','wp-responsive-video-gallery-with-lightbox');?>" class="alignCenter"><?php echo $row['createdon'] ?></td>
+									<td data-title="<?php echo __('Edit','wp-responsive-video-gallery-with-lightbox');?>" class="alignCenter">
+                                                                            <strong><a href='<?php echo $editlink; ?>' title="<?php echo __('Edit','wp-responsive-video-gallery-with-lightbox');?>"><?php echo __('Edit','wp-responsive-video-gallery-with-lightbox');?></a></strong>
+                                                                        </td>
+									<td data-title="<?php echo __('Delete','wp-responsive-video-gallery-with-lightbox');?>" class="alignCenter">
+                                                                            <strong>
+                                                                                <a href='<?php echo $deletelink; ?>' onclick="return confirmDelete();" title="<?php echo __('Delete','wp-responsive-video-gallery-with-lightbox');?>"><?php echo __('Delete','wp-responsive-video-gallery-with-lightbox');?></a> 
+                                                                            </strong>
+                                                                        </td>
 								</tr>
                                                             <?php
 									}
@@ -918,8 +1358,7 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 									?>
 								<tr valign="top" class=""
 									id="">
-									<td colspan="8" data-title="No Record" align="center"><strong>No
-											Videos Found</strong></td>
+									<td colspan="8" data-title="<?php echo __('No Records','wp-responsive-video-gallery-with-lightbox');?>" align="center"><strong><?php echo __('No Videos Found','wp-responsive-video-gallery-with-lightbox');?></strong></td>
 								</tr>
                                                                 <?php
 								}
@@ -928,7 +1367,7 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
                                                     </table>
                                                     </div>
                                                  <?php
-							if (sizeof ( $rows ) > 0) {
+							if ($rowCount > 0) {
 								echo "<div class='pagination' style='padding-top:10px'>";
 								echo paginate_links ( $pagination_args );
 								echo "</div>";
@@ -937,11 +1376,11 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
                                                  <br />
 					<div class="alignleft actions">
 						<select name="action" id="action_bottom">
-							<option selected="selected" value="-1">Bulk Actions</option>
-							<option value="delete">delete</option>
+							<option selected="selected" value="-1"><?php echo __('Bulk Actions','wp-responsive-video-gallery-with-lightbox');?></option>
+							<option value="delete"><?php echo __('Delete','wp-responsive-video-gallery-with-lightbox');?></option>
 						</select>
                                             <?php wp_nonce_field('action_settings_mass_delete', 'mass_delete_nonce'); ?>
-                                            <input type="submit" value="Apply"
+                                            <input type="submit" value="<?php echo __('Apply','wp-responsive-video-gallery-with-lightbox');?>"
 							class="button-secondary action" id="deleteselected"
 							name="deleteselected" onclick="return confirmDelete_bulk();">
 					</div>
@@ -956,7 +1395,7 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
                                      if(topval=='delete' || bottomVal=='delete'){
 
 
-                                         var agree=confirm("Are you sure you want to delete selected videos ?");
+                                         var agree=confirm("<?php echo __('Are you sure you want to delete selected videos?','wp-responsive-video-gallery-with-lightbox');?>");
                                          if (agree)
                                              return true ;
                                          else
@@ -965,7 +1404,7 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
                               }
                                 function  confirmDelete(){
 
-                                    var agree=confirm("Are you sure you want to delete this video ?");
+                                    var agree=confirm("<?php echo __('Are you sure you want to delete this video ?','wp-responsive-video-gallery-with-lightbox');?>");
                                     if (agree)
                                         return true ;
                                    else
@@ -980,14 +1419,13 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 
 
                 </div>
-		<h3>To print this video gallery into WordPress Post/Page use below code</h3>
+		<h3><?php echo __('To print this video carousel into WordPress Post/Page use below code','wp-responsive-video-gallery-with-lightbox');?></h3>
 		<input type="text"
 			value='[print_responsive_video_gallery_plus_lightbox] '
 			style="width: 400px; height: 30px"
 			onclick="this.focus(); this.select()" />
 		<div class="clear"></div>
-		<h3>To print this video gallery into WordPress theme/template PHP files use
-			below code</h3>
+		<h3><?php echo __('To print this video carousel into WordPress theme/template PHP files use below code','wp-responsive-video-gallery-with-lightbox');?></h3>
                 <?php
 		$shortcode = '[print_responsive_video_gallery_plus_lightbox]';
 		?>
@@ -1000,26 +1438,17 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
           </div>
              <div id="postbox-container-1" class="postbox-container" > 
 
-          <div class="postbox"> 
-              <h3 class="hndle"><span></span>Access All Themes In One Price</h3> 
+          <div class="postbox">
               <div class="inside">
-                  <center><a href="http://www.elegantthemes.com/affiliates/idevaffiliate.php?id=11715_0_1_10" target="_blank"><img border="0" src="<?php echo plugins_url( 'images/300x250.gif', __FILE__ ) ;?>" width="250" height="250"></a></center>
-
-                  <div style="margin:10px 5px">
-
-                  </div>
-              </div></div>
-          <div class="postbox"> 
-              <h3 class="hndle"><span></span>Best WordPress Themes</h3> 
-              <div class="inside">
-                  <center><a href="https://mythemeshop.com/?ref=nik_gandhi007" target="_blank"><img src="<?php echo plugins_url( 'images/300x250.png', __FILE__ ) ;?>" width="250" height="250" border="0"></a></center>
-                  <div style="margin:10px 5px">
-                  </div>
-              </div></div>
+                  <?php echo rvg_render_pro_upsell_postbox(); ?>
+              </div>
+          </div>
 
       </div>
     </div>
-   </div>                <?php
+   </div>
+</div>
+       <?php
 	} else if (strtolower ( $action ) == strtolower ( 'addedit' )) {
 		$url = plugin_dir_url ( __FILE__ );
                 $vNonce = wp_create_nonce('vNonce');
@@ -1036,8 +1465,8 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 			$baseDir = str_replace ( "\\", "/", $baseDir );
 			$pathToImagesFolder = $baseDir . '/wp-responsive-video-gallery-with-lightbox';
 			
-			$vtype = trim ( htmlentities(strip_tags ( $_POST ['vtype'] ),ENT_QUOTES) );
-			$videourl = trim ( htmlentities(strip_tags($_POST ['videourl'] ),ENT_QUOTES));
+			$vtype = trim ( htmlentities(sanitize_text_field( $_POST ['vtype'] ),ENT_QUOTES) );
+			$videourl = trim ( htmlentities(esc_url_raw($_POST ['videourl'] ),ENT_QUOTES));
 			// echo $videourl;die;
 			$vid = uniqid ( 'vid_' );
 			$embed_url='';
@@ -1059,22 +1488,48 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 			}
 			else if($vtype=='dailymotion'){
 				
-				$pattern = "#(?<=video/).*?(?=_)#";
-				preg_match($pattern, $videourl, $matches, PREG_OFFSET_CAPTURE, 3);
-				$vid=0;
-				if($matches and is_array($matches)){
+                                $url_arr = parse_url($videourl);
+                                if(is_array($url_arr) and isset($url_arr['query'])){
+                                    
+                                    $query = $url_arr['query'];
+                                    $videourl = str_replace(array($query,'?'), '', $videourl);
+                                }
+                               $pos = strpos($videourl, '/video/');
+                                $vid=0;
+                                if ($pos !== false){
+
+                                    $vid=substr($videourl, $pos+strlen('/video/'));
+
+                                }
+
+                               $embed_url="//www.dailymotion.com/embed/video/$vid";
 				
-					$vid=$matches[0][0];
+			}
+			else if($vtype=='vimeo'){
+
+				// Vimeo URLs are typically vimeo.com/{id}, sometimes with extra path
+				// segments (e.g. channel or showcase URLs) - the id is the last
+				// numeric path segment.
+				$url_arr = parse_url($videourl);
+				$vid = 0;
+				if (is_array($url_arr) and isset($url_arr['path'])) {
+					$segments = array_reverse(array_filter(explode('/', $url_arr['path'])));
+					foreach ($segments as $segment) {
+						if (is_numeric($segment)) {
+							$vid = $segment;
+							break;
+						}
+					}
 				}
-				
-				$embed_url="//www.dailymotion.com/embed/video/$vid";
-				
+
+				$embed_url="//player.vimeo.com/video/$vid";
+
 			}
 			
 			
-			$HdnMediaSelection = trim ( htmlentities(strip_tags($_POST ['HdnMediaSelection'] ),ENT_QUOTES));
-			$videotitle = trim ( htmlentities(strip_tags($_POST ['videotitle'] ),ENT_QUOTES)) ;
-			$videotitleurl = trim ( htmlentities(strip_tags($_POST ['videotitleurl'] ),ENT_QUOTES));
+			$HdnMediaSelection = trim ( htmlentities(esc_url_raw($_POST ['HdnMediaSelection'] ),ENT_QUOTES));
+			$videotitle = trim ( htmlentities(sanitize_text_field($_POST ['videotitle'] ),ENT_QUOTES)) ;
+			$videotitleurl = trim ( htmlentities(esc_url_raw($_POST ['videotitleurl'] ),ENT_QUOTES));
 			$video_order = 0;
 			
 			$video_description = '';
@@ -1082,7 +1537,7 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 			$videotitle = str_replace("'","’",$videotitle);
 			$videotitle = str_replace('"', '&quot;', $videotitle);
 			
-			$open_link_in = 0;
+			$open_link_in = 1;
 			
 			$enable_light_box_video_desc = 0;
 
@@ -1090,80 +1545,159 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 				// edit save
 			if (isset ( $_POST ['videoid'] )) {
 				
+                                 if ( ! current_user_can( 'rvg_responsive_video_gallery_edit_video' ) ) {
+
+                                        $location='admin.php?page=responsive_video_gallery_with_lightbox_video_management';
+                                        $responsive_video_gallery_plus_lightbox_messages=array();
+                                        $responsive_video_gallery_plus_lightbox_messages['type']='err';
+                                        $responsive_video_gallery_plus_lightbox_messages['message']=__('Access Denied. Please contact your administrator.','wp-responsive-video-gallery-with-lightbox');
+                                        update_option('responsive_video_gallery_plus_lightbox_messages', $responsive_video_gallery_plus_lightbox_messages);
+                                        echo "<script type='text/javascript'> location.href='$location';</script>";     
+                                        exit;   
+
+                                  }
+                                
 				try {
 						
-						$videoidEdit=htmlentities(strip_tags($_POST ['videoid']),ENT_QUOTES);
+						$videoidEdit=intval(htmlentities(strip_tags($_POST ['videoid']),ENT_QUOTES));
 						if (trim ( $_POST ['HdnMediaSelection'] ) != '') {
                                                     
 							$pInfo = pathinfo ( $HdnMediaSelection );
-							$ext = $pInfo ['extension'];
+							 $ext = @$pInfo ['extension'];
+                                                        if($ext==''){
+                                                           if (exif_imagetype($HdnMediaSelection) == IMAGETYPE_PNG) {
+
+                                                              $ext='png'; 
+                                                           } 
+                                                           else if (exif_imagetype($HdnMediaSelection) == IMAGETYPE_JPEG) {
+
+                                                              $ext='jpeg'; 
+                                                           } 
+                                                           else if (exif_imagetype($HdnMediaSelection) == IMAGETYPE_GIF) {
+
+                                                              $ext='gif'; 
+                                                           } 
+                                                           else if (exif_imagetype($HdnMediaSelection) == IMAGETYPE_WEBP) {
+
+                                                              $ext='webp'; 
+                                                           } 
+
+                                                        }
 							$imagename = $vid . '_big.' . $ext;
 							$imageUploadTo = $pathToImagesFolder . '/' . $imagename;
 							@copy ( $HdnMediaSelection, $imageUploadTo );
+                                                        if(!file_exists($imageUploadTo)){
+                                                            vgallery_save_image_curl($HdnMediaSelection,$imageUploadTo);
+                                                        }
                                                         $settings=get_option('responsive_video_gallery_slider_settings');
                                                         $imageheight = $settings ['imageheight'];
                                                         $imagewidth = $settings ['imagewidth'];
                                                         @unlink($pathToImagesFolder.'/'.$vid . '_big_'.$imageheight.'_'.$imagewidth.'.'.$ext);
 						}
 							
-						$query = "update " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox
-						set vtype='$vtype',vid='$vid',video_url='$videourl',embed_url='$embed_url',image_name='$imagename',HdnMediaSelection='$HdnMediaSelection',
-						videotitle='$videotitle',videotitleurl='$videotitleurl',video_description='$video_description',video_order=$video_order,
-						open_link_in=$open_link_in,enable_light_box_video_desc=$enable_light_box_video_desc where id=$videoidEdit";
+						$query = $wpdb->prepare(
+							"update " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox
+							set vtype=%s,vid=%s,video_url=%s,embed_url=%s,image_name=%s,HdnMediaSelection=%s,
+							videotitle=%s,videotitleurl=%s,video_description=%s,video_order=%d,
+							open_link_in=%d,enable_light_box_video_desc=%d where id=%d",
+							$vtype, $vid, $videourl, $embed_url, $imagename, $HdnMediaSelection,
+							$videotitle, $videotitleurl, $video_description, $video_order,
+							$open_link_in, $enable_light_box_video_desc, $videoidEdit
+						);
 							
 						
 						$wpdb->query ( $query );
 							
 						$responsive_video_gallery_plus_lightbox_messages = array ();
 						$responsive_video_gallery_plus_lightbox_messages ['type'] = 'succ';
-						$responsive_video_gallery_plus_lightbox_messages ['message'] = 'Video updated successfully.';
+						$responsive_video_gallery_plus_lightbox_messages ['message'] = __('Video updated successfully.','wp-responsive-video-gallery-with-lightbox');
 						update_option ( 'responsive_video_gallery_plus_lightbox_messages', $responsive_video_gallery_plus_lightbox_messages );
-					} catch ( Exception $e ) {
+					} 
+                                        catch ( Exception $e ) {
 							
 						$responsive_video_gallery_plus_lightbox_messages = array ();
-										$responsive_video_gallery_plus_lightbox_messages ['type'] = 'err';
-										$responsive_video_gallery_plus_lightbox_messages ['message'] = 'Error while adding video';
+                                                $responsive_video_gallery_plus_lightbox_messages ['type'] = 'err';
+                                                $responsive_video_gallery_plus_lightbox_messages ['message'] = __('Error while adding video.','wp-responsive-video-gallery-with-lightbox');
 						update_option ( 'responsive_video_gallery_plus_lightbox_messages', $responsive_video_gallery_plus_lightbox_messages );
-						}
+				         }
 
 				
 				
 				echo "<script type='text/javascript'> location.href='$location';</script>";
 				exit ();
-			} else {
+			} 
+                        else {
 				
 				// add new
 				
+                                if ( ! current_user_can( 'rvg_responsive_video_gallery_add_video' ) ) {
+
+                                        $location='admin.php?page=responsive_video_gallery_with_lightbox_video_management';
+                                        $responsive_video_gallery_plus_lightbox_messages=array();
+                                        $responsive_video_gallery_plus_lightbox_messages['type']='err';
+                                        $responsive_video_gallery_plus_lightbox_messages['message']=__('Access Denied. Please contact your administrator.','wp-responsive-video-gallery-with-lightbox');
+                                        update_option('responsive_video_gallery_plus_lightbox_messages', $responsive_video_gallery_plus_lightbox_messages);
+                                        echo "<script type='text/javascript'> location.href='$location';</script>";     
+                                        exit;   
+
+                                  }
+                                  
 				$createdOn = current_time ( 'Y-m-d h:i:s' );
 				
 				try {
 					
 					if (trim ( $_POST ['HdnMediaSelection'] ) != '') {
 						$pInfo = pathinfo ( $HdnMediaSelection );
-						$ext = $pInfo ['extension'];
+						 $ext = @$pInfo ['extension'];
+                                                if($ext==''){
+                                                   if (exif_imagetype($HdnMediaSelection) == IMAGETYPE_PNG) {
+
+                                                      $ext='png'; 
+                                                   } 
+                                                   else if (exif_imagetype($HdnMediaSelection) == IMAGETYPE_JPEG) {
+
+                                                      $ext='jpeg'; 
+                                                   } 
+                                                   else if (exif_imagetype($HdnMediaSelection) == IMAGETYPE_GIF) {
+
+                                                      $ext='gif'; 
+                                                   } 
+                                                   else if (exif_imagetype($HdnMediaSelection) == IMAGETYPE_WEBP) {
+
+                                                      $ext='webp'; 
+                                                   } 
+
+                                                }
 						$imagename = $vid . '_big.' . $ext;
 						$imageUploadTo = $pathToImagesFolder . '/' . $imagename;
 						@copy ( $HdnMediaSelection, $imageUploadTo );
+                                                if(!file_exists($imageUploadTo)){
+                                                    vgallery_save_image_curl($HdnMediaSelection,$imageUploadTo);
+                                                }
+
 					}
 					
-					$query = "INSERT INTO " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox 
+					$query = $wpdb->prepare(
+						"INSERT INTO " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox 
                                 		(vtype, vid,video_url,embed_url,image_name,HdnMediaSelection,videotitle,videotitleurl,video_description,video_order,open_link_in,
                             			enable_light_box_video_desc,createdon) 
-                           				 VALUES ('$vtype','$vid','$videourl','$embed_url','$imagename','$HdnMediaSelection','$videotitle','$videotitleurl','$video_description',
-                                		$video_order,$open_link_in,$enable_light_box_video_desc,'$createdOn')";
+                           				 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%d,%d,%d,%s)",
+						$vtype, $vid, $videourl, $embed_url, $imagename, $HdnMediaSelection, $videotitle, $videotitleurl, $video_description,
+						$video_order, $open_link_in, $enable_light_box_video_desc, $createdOn
+					);
 					
 					//echo $query;die;
 					$wpdb->query ( $query );
 					
 					$responsive_video_gallery_plus_lightbox_messages = array ();
 					$responsive_video_gallery_plus_lightbox_messages ['type'] = 'succ';
-					$responsive_video_gallery_plus_lightbox_messages ['message'] = 'New video added successfully.';
+					$responsive_video_gallery_plus_lightbox_messages ['message'] = __('New video added successfully.','wp-responsive-video-gallery-with-lightbox');
 					update_option ( 'responsive_video_gallery_plus_lightbox_messages', $responsive_video_gallery_plus_lightbox_messages );
 				} catch ( Exception $e ) {
 					
 					$responsive_video_gallery_plus_lightbox_messages = array ();
 					$responsive_video_gallery_plus_lightbox_messages ['type'] = 'err';
-					$responsive_video_gallery_plus_lightbox_messages ['message'] = 'Error while adding video';
+					$responsive_video_gallery_plus_lightbox_messages ['message'] = __('Error while adding video','wp-responsive-video-gallery-with-lightbox');
 					update_option ( 'responsive_video_gallery_plus_lightbox_messages', $responsive_video_gallery_plus_lightbox_messages );
 				}
 				
@@ -1180,19 +1714,43 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
                   <div id="post-body" class="metabox-holder columns-2" >  
                    <div id="post-body-content">
                     <div class="wrap">
-                         <div style="float: left; width: 100%;">
+                       <div style="float: left; width: 100%;">
                           <div class="wrap">
-	    	<?php
-		    	if (isset ( $_GET ['id'] ) and $_GET ['id'] > 0) {
+                          <?php
+		    	  if (isset ( $_GET ['id'] ) and intval($_GET ['id']) > 0) {
 				
-				$id = $_GET ['id'];
-				$query = "SELECT * FROM " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox WHERE id=$id";
+                                if ( ! current_user_can( 'rvg_responsive_video_gallery_edit_video' ) ) {
+
+                                        $location='admin.php?page=responsive_video_gallery_with_lightbox_video_management';
+                                        $responsive_video_gallery_plus_lightbox_messages=array();
+                                        $responsive_video_gallery_plus_lightbox_messages['type']='err';
+                                        $responsive_video_gallery_plus_lightbox_messages['message']=__('Access Denied. Please contact your administrator.','wp-responsive-video-gallery-with-lightbox');
+                                        update_option('responsive_video_gallery_plus_lightbox_messages', $responsive_video_gallery_plus_lightbox_messages);
+                                        echo "<script type='text/javascript'> location.href='$location';</script>";     
+                                        exit;   
+
+                                  }
+                                  
+				$id = intval($_GET ['id']);
+				$query = $wpdb->prepare("SELECT * FROM " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox WHERE id=%d", $id);
 				
 				$myrow = $wpdb->get_row ( $query );
 				
 				if (is_object ( $myrow )) {
 					
                                     
+                                    if ( ! current_user_can( 'rvg_responsive_video_gallery_edit_video' ) ) {
+
+                                        $location='admin.php?page=responsive_video_gallery_with_lightbox_video_management';
+                                        $responsive_video_gallery_plus_lightbox_messages=array();
+                                        $responsive_video_gallery_plus_lightbox_messages['type']='err';
+                                        $responsive_video_gallery_plus_lightbox_messages['message']=__('Access Denied. Please contact your administrator.','wp-responsive-video-gallery-with-lightbox');
+                                        update_option('responsive_video_gallery_plus_lightbox_messages', $responsive_video_gallery_plus_lightbox_messages);
+                                        echo "<script type='text/javascript'> location.href='$location';</script>";     
+                                        exit;   
+
+                                     }
+                                  
 					$vtype = $myrow->vtype ;
 					$title = $myrow->videotitle ;
 					$image_name = $myrow->image_name;
@@ -1206,29 +1764,41 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 					$enable_light_box_video_desc = $myrow->enable_light_box_video_desc ;
 				}
 				?>
-	         <h2>Update Video</h2><?php
-			} else {
-				
-				$vtype='';
-				$title = '';
-				$videotitle='';
-                                $videotitleurl='';
-				$HdnMediaSelection='';
-				$video_url = '';
-				$image_link = '';
-				$image_name = '';
-				$video_order = '';
-				$video_description = '';
-				$open_link_in = true;
-				$enable_light_box_video_desc = true;
-				?>
-                 
-                  <div style="clear:both">
-                            <span><h3 style="color: blue;"><a target="_blank" href="http://www.i13websolution.com/wordpress-responsive-video-gallery-with-lightbox-pro.html">UPGRADE TO PRO VERSION</a></h3></span>
-                        </div>  
-                 <h2>Add Video</h2>
-                   <?php } ?>
-                   <br />
+                            <h2><?php echo __('Update Video','wp-responsive-video-gallery-with-lightbox');?></h2>
+                                <?php
+                                   } else {
+
+                                       
+                                          if ( ! current_user_can( 'rvg_responsive_video_gallery_add_video' ) ) {
+
+                                                $location='admin.php?page=responsive_video_gallery_with_lightbox_video_management';
+                                                $responsive_video_gallery_plus_lightbox_messages=array();
+                                                $responsive_video_gallery_plus_lightbox_messages['type']='err';
+                                                $responsive_video_gallery_plus_lightbox_messages['message']=__('Access Denied. Please contact your administrator.','wp-responsive-video-gallery-with-lightbox');
+                                                update_option('responsive_video_gallery_plus_lightbox_messages', $responsive_video_gallery_plus_lightbox_messages);
+                                                echo "<script type='text/javascript'> location.href='$location';</script>";     
+                                                exit;   
+
+                                             } 
+                                           $vtype='';
+                                           $title = '';
+                                           $videotitle='';
+                                           $videotitleurl='';
+                                           $HdnMediaSelection='';
+                                           $video_url = '';
+                                           $image_link = '';
+                                           $image_name = '';
+                                           $video_order = '';
+                                           $video_description = '';
+                                           $open_link_in = true;
+                                           $enable_light_box_video_desc = true;
+                                           ?>
+
+                             <div style="clear:both">
+                                   </div>  
+                            <h2><?php echo __('Add Video','wp-responsive-video-gallery-with-lightbox');?></h2>
+                              <?php } ?>
+                              <br />
 					<div id="poststuff">
 						<div id="post-body" class="metabox-holder columns-2">
 							<div id="post-body-content">
@@ -1236,23 +1806,25 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 									enctype="multipart/form-data">
 									<div class="stuffbox" id="namediv" style="width: 100%">
 										<h3>
-											<label for="link_name">Video Information (<span
-												style="font-size: 11px; font-weight: normal"><?php _e(' Choose Video Site'); ?></span>)
+											<label for="link_name"><?php echo __('Video Information','wp-responsive-video-gallery-with-lightbox');?> (<span
+												style="font-size: 11px; font-weight: normal"><?php _e('Choose Video Site','wp-responsive-video-gallery-with-lightbox'); ?></span>)
 											</label>
 										</h3>
 										<div class="inside">
 											<div>
 												<input type="radio" value="youtube" name="vtype"
-													<?php if($vtype=='youtube'): ?> checked='checked' <?php endif;?> style="width: 15px" id="type_youtube" />Youtube&nbsp;&nbsp;
+													<?php if($vtype=='youtube'): ?> checked='checked' <?php endif;?> style="width: 15px" id="type_youtube" /><?php echo __('Youtube','wp-responsive-video-gallery-with-lightbox');?>&nbsp;&nbsp;
 												<input <?php if($vtype=='dailymotion'): ?> checked='checked' <?php endif;?> type="radio" value="dailymotion" name="vtype"
-													style="width: 15px" id="type_DailyMotion" />DailyMotion&nbsp;&nbsp;
+													style="width: 15px" id="type_DailyMotion" /><?php echo __('DailyMotion','wp-responsive-video-gallery-with-lightbox');?>&nbsp;&nbsp;
+						<input <?php if($vtype=='vimeo'): ?> checked='checked' <?php endif;?> type="radio" value="vimeo" name="vtype"
+							style="width: 15px" id="type_Vimeo" /><?php echo __('Vimeo','wp-responsive-video-gallery-with-lightbox');?>&nbsp;&nbsp;
 											</div>
 											<div style="clear: both"></div>
 											<div></div>
 											<div style="clear: both"></div>
 											<br />
 											<div>
-												<b>Video Url</b> <input type="text" id="videourl"
+												<b><?php echo __('Video Url','wp-responsive-video-gallery-with-lightbox');?></b> <input type="text" id="videourl"
 													class="url" tabindex="1" size="30" name="videourl"
 													value="<?php echo $video_url; ?>">
 											</div>
@@ -1263,12 +1835,12 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 									</div>
 									<div class="stuffbox" id="namediv" style="width: 100%">
 										<h3>
-											<label for="link_name">Video Thumbnail Information</label>
+											<label for="link_name"><?php echo __('Video Information','wp-responsive-video-gallery-with-lightbox');?></label>
 										</h3>
 										<div class="inside" id="fileuploaddiv">
                                                                                  <?php if ($image_name != "") { ?>
                                                                                         <div>
-												<b>Current Image : </b>
+												<b><?php echo __('Current Image : ','wp-responsive-video-gallery-with-lightbox');?></b>
 												<br/>
 												<img id="img_disp" name="img_disp"
 													src="<?php echo $baseurl . $image_name; ?>" />
@@ -1281,8 +1853,7 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
                                                                                         <?php } ?>
                                                                                         <br /> <a
 												href="javascript:;" class="niks_media"
-												id="videoFromExternalSite"  ><b>Click Here to get video
-													information and thumbnail<span id='fromval'> From <?php echo $vtype;?></span>
+												id="videoFromExternalSite"  ><b><?php echo __('Click Here to get video information and thumbnail','wp-responsive-video-gallery-with-lightbox');?><span id='fromval'> From <?php echo $vtype;?></span>
 											</b></a>&nbsp;<img
 												src="<?php echo plugins_url('/images/ajax-loader.gif', __FILE__); ?>"
 												style="display: none" id="loading_img" name="loading_img" />
@@ -1291,15 +1862,12 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 											<div class="uploader">
 												<br /> <b style="margin-left: 50px;">OR</b>
 												<div style="clear: both; margin-top: 15px;"></div>
-                                                            <?php if (responsive_video_gallery_plus_responsive_lightbox_get_wp_version() >= 3.5) { ?>
-                                                                <a
-													href="javascript:;" class="niks_media" id="myMediaUploader"><b>Click
-														Here to upload custom video thumbnail</b></a>
-                                                            <?php } ?>  
-                                                             <br /> <br />
+                                                                                                <?php if (responsive_video_gallery_plus_responsive_lightbox_get_wp_version() >= 3.5) { ?>
+                                                                                                    <a href="javascript:;" class="niks_media" id="myMediaUploader"><b><?php echo __('Click Here to upload custom video thumbnail','wp-responsive-video-gallery-with-lightbox');?></b></a>
+                                                                                                <?php } ?>  
+                                                                                                 <br /> <br />
 												<div>
-													<input id="HdnMediaSelection" name="HdnMediaSelection"
-														type="hidden" value="<?php echo $HdnMediaSelection;?>" />
+													<input id="HdnMediaSelection" name="HdnMediaSelection" type="hidden" value="<?php echo $HdnMediaSelection;?>" />
 												</div>
 												<div style="clear: both"></div>
 												<div></div>
@@ -1309,289 +1877,329 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 											</div>
 											<script>
 
-                                                            function GetParameterValues(param,str) {
-                                                              var return_p='';  
-                                                              var url = str.slice(str.indexOf('?') + 1).split('&');
-                                                              for (var i = 0; i < url.length; i++) {
-                                                                    var urlparam = url[i].split('=');
-                                                                    if (urlparam[0] == param) {
-                                                                     return_p= urlparam[1];
-                                                                    }
-                                                                }
-                                                                return return_p;
-                                                            }
+                                                                                                function GetParameterValues(param,str) {
+                                                                                                  var return_p='';  
+                                                                                                  var url = str.slice(str.indexOf('?') + 1).split('&');
+                                                                                                  for (var i = 0; i < url.length; i++) {
+                                                                                                        var urlparam = url[i].split('=');
+                                                                                                        if (urlparam[0] == param) {
+                                                                                                         return_p= urlparam[1];
+                                                                                                        }
+                                                                                                    }
+                                                                                                    return return_p;
+                                                                                                }
 
-                                                            var $n = jQuery.noConflict();
+                                                                                                
 
-                                                            function UrlExists(url, cb){
-                                                            	$n.ajax({
-                                                                    url:      url,
-                                                                    dataType: 'text',
-                                                                    type:     'GET',
-                                                                    complete:  function(xhr){
-                                                                        if(typeof cb === 'function')
-                                                                           cb.apply(this, [xhr.status]);
-                                                                    }
-                                                                });
-                                                            }
-                                                            
-                                                            function getDailyMotionId(url) {
-                                                                var m = url.match(/^.+dailymotion.com\/(video|hub)\/([^_]+)[^#]*(#video=([^_&]+))?/);
-                                                                if (m !== null) {
-                                                                    if(m[4] !== undefined) {
-                                                                        return m[4];
-                                                                    }
-                                                                    return m[2];
-                                                                }
-                                                                return null;
-                                                            }
-                                                            															
-                                                                                                                      
-                                                            $n(document).ready(function() {
+                                                                                                function UrlExists(url, cb){
+                                                                                                    jQuery.ajax({
+                                                                                                        url:      url,
+                                                                                                        dataType: 'text',
+                                                                                                        type:     'GET',
+                                                                                                        complete:  function(xhr){
+                                                                                                            if(typeof cb === 'function')
+                                                                                                               cb.apply(this, [xhr.status]);
+                                                                                                        }
+                                                                                                    });
+                                                                                                }
 
-                                                                 	
-                                                            $n("input:radio[name=vtype]").click(function() {
+                                                                                                function getDailyMotionId(url) {
+                                                                                                    
+                                                                                                    if (url.indexOf("?") > 0) {
+                                                                                                        url = url.substring(0, url.indexOf("?"));
+                                                                                                   }
+                                                                                                    var m = url.match(/^.+dailymotion.com\/(video|hub)\/([^_]+)[^#]*(#video=([^_&]+))?/);
+                                                                                                    if (m !== null) {
+                                                                                                        if(m[4] !== undefined) {
+                                                                                                            return m[4];
+                                                                                                        }
+                                                                                                        return m[2];
+                                                                                                    }
+                                                                                                    return null;
+                                                                                                }
 
+
+                                                                                                jQuery(document).ready(function() {
+
+
+                                                                                                jQuery("input:radio[name=vtype]").click(function() {
+
+
+                                                                                                var value = jQuery(this).val();
+                                                                                                        jQuery("#fromval").html(" from " + value);
+                                                                                                });
+
+                                                                                                jQuery("#videoFromExternalSite").click(function() {
+
+
+                                                                                                var videoService = jQuery('input[name="vtype"]:checked').length;
+                                                                                                        var videourlVal = jQuery.trim(jQuery("#videourl").val());
+                                                                                                        var flag = true;
+                                                                                                        if (videourlVal == '' && videoService == 0){
+
+                                                                                                alert('Please select video site.\nPlease enter video url.');
+                                                                                                        jQuery("input:radio[name=vtype]").focus();
+                                                                                                        flag = false;
+
+                                                                                                }
+                                                                                                else if (videoService == 0){
+
+                                                                                                alert('Please select video site.');
+                                                                                                        jQuery("input:radio[name=vtype]").focus();
+                                                                                                        flag = false;
+                                                                                                }
+                                                                                                else if (videourlVal == ''){
+
+                                                                                                alert('Please enter video url.');
+                                                                                                        jQuery("#videourl").focus();
+                                                                                                        flag = false;
+                                                                                                }
+
+                                                                                                if (flag){
+
+                                                                                                    setTimeout(function() {
+                                                                                                             jQuery("#loading_img").show();   
+                                                                                                            }, 100);
+
+                                                                                                var selectedRadio = jQuery('input[name=vtype]');
+                                                                                                var checkedValueRadio = selectedRadio.filter(':checked').val();
+                                                                                                if (checkedValueRadio == 'youtube') {
+                                                                                                var vId = GetParameterValues('v', videourlVal);
+                                                                                                if(vId!=''){
+
+
+                                                                                                 var tumbnailImg='http://img.youtube.com/vi/'+vId+'/maxresdefault.jpg';
+
+                                                                                                 var data = {
+                                                                                                                    'action': 'check_file_exist',
+                                                                                                                    'url': tumbnailImg,
+                                                                                                                    'vNonce':'<?php echo $vNonce; ?>'
+                                                                                                            };
+
+                                                                                                            jQuery.post(ajaxurl, data, function(response) {
+
+
+
+                                                                                                          var youtubeJsonUri='https://www.youtube.com/oembed?url=https://www.youtube.com/watch%3Fv='+vId+'&format=json';
+                                                                                                           var data_youtube = {
+                                                                                                                    'action': 'get_youtube_info',
+                                                                                                                    'url': youtubeJsonUri,
+                                                                                                                    'vid':vId,
+                                                                                                                    'vNonce':'<?php echo $vNonce; ?>'
+                                                                                                            };
+
+                                                                                                          jQuery.post(ajaxurl, data_youtube, function(data) {
+
+                                                                                                           data = jQuery.parseJSON(data);
+                                                                                                           
+                                                                                                            if(typeof data =='object'){    
+                                                                                                                    if(typeof data =='object'){ 
+                                                                                                                            
+                                                                                                                         if(data.title!='' && data.title!=''){
+                                                                                                                             jQuery("#videotitle").val(data.title); 
+                                                                                                                         }
+                                                                                                                         jQuery("#videotitleurl").val(videourlVal);
+                                                                                                                         if(data.description!='' && data.description!=''){
+                                                                                                                             jQuery("#video_description").val(data.description); 
+                                                                                                                         }
+                                                                                                                         if(response=='404' && data.thumbnail_url!=''){
+                                                                                                                              tumbnailImg=data.thumbnail_url;
+                                                                                                                         }
+                                                                                                                         else{
+                                                                                                                              tumbnailImg='http://img.youtube.com/vi/'+vId+'/0.jpg';
+                                                                                                                          }
+
+                                                                                                                         jQuery("#img_disp").attr('src', tumbnailImg);
+                                                                                                                         jQuery("#HdnMediaSelection").val(tumbnailImg);
+                                                                                                                         jQuery("#loading_img").hide();
+
+                                                                                                                    }
+
+                                                                                                                 }
+                                                                                                                jQuery("#loading_img").hide();
+                                                                                                            })  
+
+
+                                                                                                             });
                                                                    
-                                                            var value = $n(this).val();
-                                                                    $n("#fromval").html(" from " + value);
-                                                            });
-                                                          
-                                                            $n("#videoFromExternalSite").click(function() {
+                                                                                                        }
+                                                                                                        else{
+                                                                                                            alert('Could not found such video');
+                                                                                                            jQuery("#loading_img").hide();
+                                                                                                        }
+                                                                                                    }
+                                                                                                    else if(checkedValueRadio == 'dailymotion'){
 
-                                                            
-                                                            var videoService = $n('input[name="vtype"]:checked').length;
-                                                                    var videourlVal = $n.trim($n("#videourl").val());
-                                                                    var flag = true;
-                                                                    if (videourlVal == '' && videoService == 0){
-
-                                                            alert('Please select video site.\nPlease enter video url.');
-                                                                    $n("input:radio[name=vtype]").focus();
-                                                                    flag = false;
-                                                                    
-                                                            }
-                                                            else if (videoService == 0){
-
-                                                            alert('Please select video site.');
-                                                                    $n("input:radio[name=vtype]").focus();
-                                                                    flag = false;
-                                                            }
-                                                            else if (videourlVal == ''){
-
-                                                            alert('Please enter video url.');
-                                                                    $n("#videourl").focus();
-                                                                    flag = false;
-                                                            }
-
-                                                            if (flag){
-
-                                                              	setTimeout(function() {
-                                                           		 $n("#loading_img").show();   
-                                                         	  	}, 100);
-
-                                                                    var selectedRadio = $n('input[name=vtype]');
-                                                                    var checkedValueRadio = selectedRadio.filter(':checked').val();
-                                                                    if (checkedValueRadio == 'youtube') {
-                                                                    var vId = GetParameterValues('v', videourlVal);
-                                                                    if(vId!=''){
-
-                                                                                                                                            
-                                                                     var tumbnailImg='http://img.youtube.com/vi/'+vId+'/maxresdefault.jpg';
-
-                                                                     var data = {
-                                                                    			'action': 'check_file_exist',
-                                                                    			'url': tumbnailImg,
-                                                                                        'vNonce':'<?php echo $vNonce; ?>'
-                                                                    		};
-
-                                                                    		$n.post(ajaxurl, data, function(response) {
-
-                                                                    																				
-                                                                      		  
-                                                                              var youtubeJsonUri='http://www.youtube.com/oembed?url=https://www.youtube.com/watch%3Fv='+vId+'&format=json';
-                                                                               var data_youtube = {
-                                                                    			'action': 'get_youtube_info',
-                                                                    			'url': youtubeJsonUri,
-                                                                                        'vid':vId,
-                                                                                        'vNonce':'<?php echo $vNonce; ?>'
-                                                                    		};
-                                                                                
-                                                                              $n.post(ajaxurl, data_youtube, function(data) {
-                                                                              
-                                                                               data = $n.parseJSON(data);
-                                                                               
-                                                                               if(typeof data =='object'){    
-                                                                                       if(typeof data =='object'){ 
-                                                                                        
-                                                                                            if(data.title!='' && data.title!=''){
-                                                                                                $n("#videotitle").val(data.title); 
-                                                                                            }
-                                                                                            $n("#videotitleurl").val(videourlVal);
-                                                                                            if(data.description!='' && data.description!=''){
-                                                                                                $n("#video_description").val(data.description); 
-                                                                                            }
-                                                                                            if(response=='404' && data.thumbnail_url!=''){
-                                                                                            	 tumbnailImg=data.thumbnail_url;
-                                                                                            }
-                                                                                            else{
-                                                                                            	 tumbnailImg='http://img.youtube.com/vi/'+vId+'/0.jpg';
-                                                                                             }
-                                                                                            
-                                                                                            $n("#img_disp").attr('src', tumbnailImg);
-                                                                                            $n("#HdnMediaSelection").val(tumbnailImg);
-                                                                                            $n("#loading_img").hide();
-                                                                                            
-                                                                                       }
-                                                                                                                                                                               
-                                                                                    }
-                                                                                   $n("#loading_img").hide();
-                                                                               })  
-                                                             			
-                                                                    			
-                                                                    		});
-                                                                   
-                                                                    }
-                                                                    else{
-                                                                        alert('Could not found such video');
-                                                                        $n("#loading_img").hide();
-                                                                    }
-                                                                }
-                                                                else if(checkedValueRadio == 'dailymotion'){
-
-                                                                	var vid=getDailyMotionId(videourlVal);	
-                                                                        var apiUrl='https://api.dailymotion.com/video/'+vid+'?fields=description,id,thumbnail_720_url,title';
-                                                                        $n.getJSON( apiUrl, function( data ) {
-                                                                                 if(typeof data =='object'){    
+                                                                                                            var vid=getDailyMotionId(videourlVal);	
+                                                                                                            var apiUrl='https://api.dailymotion.com/video/'+vid+'?fields=description,id,thumbnail_720_url,title';
+                                                                                                            jQuery.getJSON( apiUrl, function( data ) {
+                                                                                                                     if(typeof data =='object'){    
 
 
-                                                                                         $n("#HdnMediaSelection").val(data.thumbnail_720_url);	
-                                                                                         $n("#videotitle").val($n.trim(data.title));
-                                                                                         $n("#videotitleurl").val(videourlVal);
-                                                                                         $n("#img_disp").attr('src', data.thumbnail_720_url);
-                                                                                         $n("#loading_img").hide();
-                                                                                 }	 
-                                                                                 $n("#loading_img").hide(); 
-                                                                        })	
+                                                                                                                             jQuery("#HdnMediaSelection").val(data.thumbnail_720_url);	
+                                                                                                                             jQuery("#videotitle").val(jQuery.trim(data.title));
+                                                                                                                             jQuery("#videotitleurl").val(videourlVal);
+                                                                                                                             jQuery("#img_disp").attr('src', data.thumbnail_720_url);
+                                                                                                                             jQuery("#loading_img").hide();
+                                                                                                                     }	 
+                                                                                                                     jQuery("#loading_img").hide(); 
+                                                                                                            })	
 
 
-                                                                         $n("#loading_img").hide();
-                                                                }          
+                                                                                                             jQuery("#loading_img").hide();
+                                                                                                    }          
+                                                                                                    else if(checkedValueRadio == 'vimeo'){
 
-                                                                $n("#loading_img").hide();
-                                                            }
-                                                                                    
-                                                             setTimeout(function() {
-                                                           		 $n("#loading_img").hide();   
-                                                         	 }, 2000);    
-                                                                
-                                                            });
-                                                                    //uploading files variable
-                                                               var custom_file_frame;
-                                                          $n("#myMediaUploader").click(function(event) {
-                                                            event.preventDefault();
-                                                                    //If the frame already exists, reopen it
-                                                                    if (typeof (custom_file_frame) !== "undefined") {
-                                                            custom_file_frame.close();
-                                                            }
+                                                                                                            var vN = videourlVal.lastIndexOf('/');
+                                                                                                            var vimeoVid = videourlVal.substring(vN + 1);
+                                                                                                            var VimeoJsonUri = 'https://vimeo.com/api/v2/video/' + vimeoVid + '.json';
+                                                                                                            jQuery.getJSON(VimeoJsonUri, function(data) {
 
-                                                            //Create WP media frame.
-                                                            custom_file_frame = wp.media.frames.customHeader = wp.media({
-                                                            //Title of media manager frame
-                                                            title: "WP Media Uploader",
-                                                                    library: {
-                                                                    type: 'image'
-                                                                    },
-                                                                    button: {
-                                                                    //Button text
-                                                                    text: "Set Image"
-                                                                    },
-                                                                    //Do not allow multiple files, if you want multiple, set true
-                                                                    multiple: false
-                                                            });
-                                                                    //callback for selected image
-                                                                    custom_file_frame.on('select', function() {
+                                                                                                                    if (typeof data == 'object'){
+                                                                                                                    if (typeof data[0] == 'object'){
 
-                                                                var attachment = custom_file_frame.state().get('selection').first().toJSON();
-                                                                var validExtensions = new Array();
-                                                                validExtensions[0] = 'jpg';
-                                                                validExtensions[1] = 'jpeg';
-                                                                validExtensions[2] = 'png';
-                                                                validExtensions[3] = 'gif';
-                                                               
-                                                                var inarr = parseInt($n.inArray(attachment.subtype, validExtensions));
-                                                                  if (inarr > 0 && attachment.type.toLowerCase() == 'image'){
+                                                                                                                        if (data[0].title != '' && data[0].title != ''){
+                                                                                                                            jQuery("#videotitle").val(data[0].title);
+                                                                                                                        }
 
-                                                                    var titleTouse = "";
-                                                                    var imageDescriptionTouse = "";
-                                                                     if ($n.trim(attachment.title) != ''){
+                                                                                                                        jQuery("#videotitleurl").val(videourlVal);
+                                                                                                                        if (data[0].description != '' && data[0].description != ''){
+                                                                                                                            jQuery("#video_description").val(data[0].description);
+                                                                                                                        }
+                                                                                                                        jQuery("#img_disp").attr('src', data[0].thumbnail_large);
+                                                                                                                        jQuery("#HdnMediaSelection").val(data[0].thumbnail_large);
+                                                                                                                        jQuery("#loading_img").hide();
+                                                                                                                    }
+                                                                                                                    else{
+                                                                                                                        alert('Could not fetch Vimeo video info. Please check the URL.');
+                                                                                                                    }
+                                                                                                                    }
+                                                                                                                    jQuery("#loading_img").hide();
+                                                                                                            }).fail(function(){
+                                                                                                                    alert('Could not fetch Vimeo video info. Please check the URL.');
+                                                                                                                    jQuery("#loading_img").hide();
+                                                                                                            });
 
-                                                                         titleTouse = $n.trim(attachment.title);
-                                                                    }
-                                                                    else if ($n.trim(attachment.caption) != ''){
 
-                                                                        titleTouse = $n.trim(attachment.caption);
-                                                                    }
+                                                                                                             jQuery("#loading_img").hide();
+                                                                                                    }
 
-                                                                    if ($n.trim(attachment.description) != ''){
+                                                                                                    jQuery("#loading_img").hide();
+                                                                                                }
 
-                                                                       imageDescriptionTouse = $n.trim(attachment.description);
-                                                                    }
-                                                                    else if ($n.trim(attachment.caption) != ''){
+                                                                                                 setTimeout(function() {
+                                                                                                             jQuery("#loading_img").hide();   
+                                                                                                     }, 2000);    
 
-                                                                    imageDescriptionTouse = $n.trim(attachment.caption);
-                                                                    }
+                                                                                                });
+                                                                                                        //uploading files variable
+                                                                                                   var custom_file_frame;
+                                                                                              jQuery("#myMediaUploader").click(function(event) {
+                                                                                                event.preventDefault();
+                                                                                                        //If the frame already exists, reopen it
+                                                                                                        if (typeof (custom_file_frame) !== "undefined") {
+                                                                                                custom_file_frame.close();
+                                                                                                }
 
-                                                                   // $n("#videotitle").val(titleTouse);
-                                                                  //  $n("#video_description").val(imageDescriptionTouse);
-                                                                    
-                                                                    if (attachment.id != ''){
-                                                                       
-                                                                              $n("#HdnMediaSelection").val(attachment.url);
-                                                                              $n("#img_disp").attr('src', attachment.url);
-                                                                    
-                                                                        }
+                                                                                                //Create WP media frame.
+                                                                                                custom_file_frame = wp.media.frames.customHeader = wp.media({
+                                                                                                //Title of media manager frame
+                                                                                                title: "WP Media Uploader",
+                                                                                                        library: {
+                                                                                                        type: 'image'
+                                                                                                        },
+                                                                                                        button: {
+                                                                                                        //Button text
+                                                                                                        text: "Set Image"
+                                                                                                        },
+                                                                                                        //Do not allow multiple files, if you want multiple, set true
+                                                                                                        multiple: false
+                                                                                                });
+                                                                                                        //callback for selected image
+                                                                                                        custom_file_frame.on('select', function() {
 
-                                                                    }
-                                                                    else{
+                                                                                                    var attachment = custom_file_frame.state().get('selection').first().toJSON();
+                                                                                                    var validExtensions = new Array();
+                                                                                                    validExtensions[0] = 'jpg';
+                                                                                                    validExtensions[1] = 'jpeg';
+                                                                                                    validExtensions[2] = 'png';
+                                                                                                    validExtensions[3] = 'gif';
+                                                                                                    validExtensions[4] = 'webp';
 
-                                                                      alert('Invalid image selection.');
-                                                                    }
-                                                                    //do something with attachment variable, for example attachment.filename
-                                                                    //Object:
-                                                                    //attachment.alt - image alt
-                                                                    //attachment.author - author id
-                                                                    //attachment.caption
-                                                                    //attachment.dateFormatted - date of image uploaded
-                                                                    //attachment.description
-                                                                    //attachment.editLink - edit link of media
-                                                                    //attachment.filename
-                                                                    //attachment.height
-                                                                    //attachment.icon - don't know WTF?))
-                                                                    //attachment.id - id of attachment
-                                                                    //attachment.link - public link of attachment, for example ""http://site.com/?attachment_id=115""
-                                                                    //attachment.menuOrder
-                                                                    //attachment.mime - mime type, for example image/jpeg"
-                                                                    //attachment.name - name of attachment file, for example "my-image"
-                                                                    //attachment.status - usual is "inherit"
-                                                                    //attachment.subtype - "jpeg" if is "jpg"
-                                                                    //attachment.title
-                                                                    //attachment.type - "image"
-                                                                    //attachment.uploadedTo
-                                                                    //attachment.url - http url of image, for example "http://site.com/wp-content/uploads/2012/12/my-image.jpg"
-                                                                    //attachment.width
-                                                                    });
-                                                                    //Open modal
-                                                                    custom_file_frame.open();
-                                                            });
-                                                            })
-                                                        </script>
+                                                                                                    var inarr = parseInt(jQuery.inArray(attachment.subtype, validExtensions));
+                                                                                                      if (inarr > 0 && attachment.type.toLowerCase() == 'image'){
+
+                                                                                                        var titleTouse = "";
+                                                                                                        var imageDescriptionTouse = "";
+                                                                                                         if (jQuery.trim(attachment.title) != ''){
+
+                                                                                                             titleTouse = jQuery.trim(attachment.title);
+                                                                                                        }
+                                                                                                        else if (jQuery.trim(attachment.caption) != ''){
+
+                                                                                                            titleTouse = jQuery.trim(attachment.caption);
+                                                                                                        }
+
+                                                                                                        if (jQuery.trim(attachment.description) != ''){
+
+                                                                                                           imageDescriptionTouse = jQuery.trim(attachment.description);
+                                                                                                        }
+                                                                                                        else if (jQuery.trim(attachment.caption) != ''){
+
+                                                                                                        imageDescriptionTouse = jQuery.trim(attachment.caption);
+                                                                                                        }
+
+                                                                                                       // jQuery("#videotitle").val(titleTouse);
+                                                                                                      //  jQuery("#video_description").val(imageDescriptionTouse);
+
+                                                                                                        if (attachment.id != ''){
+
+                                                                                                                  jQuery("#HdnMediaSelection").val(attachment.url);
+                                                                                                                  jQuery("#img_disp").attr('src', attachment.url);
+
+                                                                                                            }
+
+                                                                                                        }
+                                                                                                        else{
+
+                                                                                                          alert('Invalid image selection.');
+                                                                                                        }
+                                                                                                        //do something with attachment variable, for example attachment.filename
+                                                                                                        //Object:
+                                                                                                        //attachment.alt - image alt
+                                                                                                        //attachment.author - author id
+                                                                                                        //attachment.caption
+                                                                                                        //attachment.dateFormatted - date of image uploaded
+                                                                                                        //attachment.description
+                                                                                                        //attachment.editLink - edit link of media
+                                                                                                        //attachment.filename
+                                                                                                        //attachment.height
+                                                                                                        //attachment.icon - don't know WTF?))
+                                                                                                        //attachment.id - id of attachment
+                                                                                                        //attachment.link - public link of attachment, for example ""http://site.com/?attachment_id=115""
+                                                                                                        //attachment.menuOrder
+                                                                                                        //attachment.mime - mime type, for example image/jpeg"
+                                                                                                        //attachment.name - name of attachment file, for example "my-image"
+                                                                                                        //attachment.status - usual is "inherit"
+                                                                                                        //attachment.subtype - "jpeg" if is "jpg"
+                                                                                                        //attachment.title
+                                                                                                        //attachment.type - "image"
+                                                                                                        //attachment.uploadedTo
+                                                                                                        //attachment.url - http url of image, for example "http://site.com/wp-content/uploads/2012/12/my-image.jpg"
+                                                                                                        //attachment.width
+                                                                                                        });
+                                                                                                        //Open modal
+                                                                                                        custom_file_frame.open();
+                                                                                                });
+                                                                                                })
+                                                                                            </script>
 										</div>
 									</div>
 
 									<div class="stuffbox" id="namediv" style="width: 100%">
 										<h3>
-											<label for="link_name">Video Title (<span
-												style="font-size: 11px; font-weight: normal"><?php _e('Used into lightbox'); ?></span>)
+											<label for="link_name"><?php echo __('Video Title','wp-responsive-video-gallery-with-lightbox');?> (<span
+												style="font-size: 11px; font-weight: normal"><?php _e('Used into lightbox','wp-responsive-video-gallery-with-lightbox'); ?></span>)
 											</label>
 										</h3>
 										<div class="inside">
@@ -1606,8 +2214,8 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 									</div>
 									<div class="stuffbox" id="namediv" style="width: 100%">
 										<h3>
-											<label for="link_name">Video Title Url (<span
-												style="font-size: 11px; font-weight: normal"><?php _e(' click on title redirect to this url.Used in lightbox for video title'); ?></span>)
+											<label for="link_name"><?php echo __('Video Title Url','wp-responsive-video-gallery-with-lightbox');?> (<span
+												style="font-size: 11px; font-weight: normal"><?php _e(' click on title redirect to this url.Used in lightbox for video title','wp-responsive-video-gallery-with-lightbox'); ?></span>)
 											</label>
 										</h3>
 										<div class="inside">
@@ -1624,116 +2232,116 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 									</div>
 							
 									
-                                                                          <?php if (isset($_GET['id']) and $_GET['id'] > 0) { ?> 
+                                                                          <?php if (isset($_GET['id']) and intval($_GET['id']) > 0) { ?> 
 										 <input type="hidden" name="videoid" id="videoid" value="<?php echo (int) htmlentities(strip_tags($_GET['id']),ENT_QUOTES); ?>">
                                                                             <?php
 										}
 										?>
                                                                               <?php wp_nonce_field('action_image_add_edit','add_edit_image_nonce'); ?>    
                                                                              <input type="submit"
-										onclick="" name="btnsave" id="btnsave" value="Save Changes"
+										onclick="" name="btnsave" id="btnsave" value="<?php echo __('Save Changes','wp-responsive-video-gallery-with-lightbox');?>"
 										class="button-primary">&nbsp;&nbsp;<input type="button"
-										name="cancle" id="cancle" value="Cancel"
-										class="button-primary"
-										onclick="location.href = 'admin.php?page=responsive_video_gallery_with_lightbox_video_management'">
+										name="cancle" id="cancle" value="<?php echo __('Cancel','wp-responsive-video-gallery-with-lightbox');?>"
+										class="button-primary" onclick="location.href = 'admin.php?page=responsive_video_gallery_with_lightbox_video_management'">
 
 								</form>
 								<script type="text/javascript">
 
-                                               var $n = jQuery.noConflict();
-                                               $n(document).ready(function() {
+                                                                    
+                                                                    jQuery(document).ready(function() {
 
-                                                $n.validator.setDefaults({ 
-                                                    ignore: [],
-                                                    // any other default options and/or rules
-                                                });
+                                                                     jQuery.validator.setDefaults({ 
+                                                                         ignore: [],
+                                                                         // any other default options and/or rules
+                                                                     });
 
-                                                $n("#addimage").validate({
-                                                rules: {
-                                                videotitle: {
-                                                required:true,
-                                                        maxlength: 200
-                                                },
-                                                        vtype: {
-                                                        required:true
+                                                                     jQuery("#addimage").validate({
+                                                                     rules: {
+                                                                     videotitle: {
+                                                                     required:true,
+                                                                             maxlength: 200
+                                                                     },
+                                                                             vtype: {
+                                                                             required:true
 
-                                                        },
-                                                        videourl: {
-                                                        required:true,
-                                                                url:true,
-                                                                maxlength: 500
-                                                        },
-                                                        HdnMediaSelection:{
-                                                          required:true  
-                                                        },
-                                                        videotitleurl: {
+                                                                             },
+                                                                             videourl: {
+                                                                             required:true,
+                                                                                     url:true,
+                                                                                     maxlength: 500
+                                                                             },
+                                                                             HdnMediaSelection:{
+                                                                               required:true  
+                                                                             },
+                                                                             videotitleurl: {
 
-                                                        url:true,
-                                                         maxlength: 500
-                                                        }
-                                                       
-                                                },
-                                                        errorClass: "image_error",
-                                                        errorPlacement: function(error, element) {
-                                                        error.appendTo(element.parent().next().next());
-                                                        }, messages: {
-                                                            HdnMediaSelection: "Please select video thumbnail or Upload by wordpress media uploader.",
-                                                            
-                                                        }
-                                             
-                                                    })
-                                                });
-                                                        function validateFile(){
+                                                                             url:true,
+                                                                              maxlength: 500
+                                                                             }
 
-                                                        var $n = jQuery.noConflict();
-                                                                if ($n('#currImg').length > 0 || $n.trim($n("#HdnMediaSelection").val()) != ""){
-                                                        return true;
-                                                        }
-                                                        var fragment = $n("#image_name").val();
-                                                                var filename = $n("#image_name").val().replace(/.+[\\\/]/, "");
-                                                                var videoid = $n("#image_name").val();
-                                                                if (videoid == ""){
+                                                                     },
+                                                                             errorClass: "image_error",
+                                                                             errorPlacement: function(error, element) {
+                                                                             error.appendTo(element.parent().next().next());
+                                                                             }, messages: {
+                                                                                 HdnMediaSelection: "Please select video thumbnail or Upload by wordpress media uploader.",
 
-                                                        if (filename != "")
-                                                                return true;
-                                                                else
-                                                        {
-                                                        $n("#err_daynamic").remove();
-                                                                $n("#image_name").after('<label class="image_error" id="err_daynamic">Please select file or use media manager to select file.</label>');
-                                                                return false;
-                                                        }
-                                                        }
-                                                        else{
-                                                        return true;
-                                                        }
-                                                        }
-                                                function reloadfileupload(){
+                                                                             }
 
-                                                var $n = jQuery.noConflict();
-                                                        var fragment = $n("#image_name").val();
-                                                        var filename = $n("#image_name").val().replace(/.+[\\\/]/, "");
-                                                        var validExtensions = new Array();
-                                                        validExtensions[0] = 'jpg';
-                                                        validExtensions[1] = 'jpeg';
-                                                        validExtensions[2] = 'png';
-                                                        validExtensions[3] = 'gif';
-                                                        validExtensions[4] = 'bmp';
-                                                        validExtensions[5] = 'tif';
-                                                        var extension = filename.substr((filename.lastIndexOf('.') + 1)).toLowerCase();
-                                                        var inarr = parseInt($n.inArray(extension, validExtensions));
-                                                        if (inarr < 0){
+                                                                         })
+                                                                     });
+                                                                             function validateFile(){
 
-                                                $n("#err_daynamic").remove();
-                                                        $n('#fileuploaddiv').html($n('#fileuploaddiv').html());
-                                                        $n("#image_name").after('<label class="image_error" id="err_daynamic">Invalid file extension</label>');
-                                                }
-                                                else{
-                                                $n("#err_daynamic").remove();
-                                                }
+                                                                             
+                                                                                     if (jQuery('#currImg').length > 0 || jQuery.trim(jQuery("#HdnMediaSelection").val()) != ""){
+                                                                             return true;
+                                                                             }
+                                                                             var fragment = jQuery("#image_name").val();
+                                                                                     var filename = jQuery("#image_name").val().replace(/.+[\\\/]/, "");
+                                                                                     var videoid = jQuery("#image_name").val();
+                                                                                     if (videoid == ""){
+
+                                                                             if (filename != "")
+                                                                                     return true;
+                                                                                     else
+                                                                             {
+                                                                             jQuery("#err_daynamic").remove();
+                                                                                     jQuery("#image_name").after('<label class="image_error" id="err_daynamic">Please select file or use media manager to select file.</label>');
+                                                                                     return false;
+                                                                             }
+                                                                             }
+                                                                             else{
+                                                                             return true;
+                                                                             }
+                                                                             }
+                                                                     function reloadfileupload(){
+
+                                                                     
+                                                                             var fragment = jQuery("#image_name").val();
+                                                                             var filename = jQuery("#image_name").val().replace(/.+[\\\/]/, "");
+                                                                             var validExtensions = new Array();
+                                                                             validExtensions[0] = 'jpg';
+                                                                             validExtensions[1] = 'jpeg';
+                                                                             validExtensions[2] = 'png';
+                                                                             validExtensions[3] = 'gif';
+                                                                             validExtensions[4] = 'bmp';
+                                                                             validExtensions[5] = 'tif';
+                                                                             validExtensions[6] = 'webp';
+                                                                             var extension = filename.substr((filename.lastIndexOf('.') + 1)).toLowerCase();
+                                                                             var inarr = parseInt(jQuery.inArray(extension, validExtensions));
+                                                                             if (inarr < 0){
+
+                                                                     jQuery("#err_daynamic").remove();
+                                                                             jQuery('#fileuploaddiv').html(jQuery('#fileuploaddiv').html());
+                                                                             jQuery("#image_name").after('<label class="image_error" id="err_daynamic">Invalid file extension</label>');
+                                                                     }
+                                                                     else{
+                                                                        jQuery("#err_daynamic").remove();
+                                                                     }
 
 
-                                                }
-                                            </script>
+                                                                     }
+                                                                 </script>
 
 							</div>
 						</div>
@@ -1743,30 +2351,19 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 			</div>
           </div>
           </div>     
-                    <div id="postbox-container-1" class="postbox-container" > 
+          <div id="postbox-container-1" class="postbox-container" > 
 
-                    <div class="postbox"> 
-                        <h3 class="hndle"><span></span>Access All Themes In One Price</h3> 
-                        <div class="inside">
-                            <center><a href="http://www.elegantthemes.com/affiliates/idevaffiliate.php?id=11715_0_1_10" target="_blank"><img border="0" src="<?php echo plugins_url( 'images/300x250.gif', __FILE__ ) ;?>" width="250" height="250"></a></center>
+          <div class="postbox">
+              <div class="inside">
+                  <?php echo rvg_render_pro_upsell_postbox(); ?>
+              </div>
+          </div>
 
-                            <div style="margin:10px 5px">
-
-                            </div>
-                        </div></div>
-                     <div class="postbox"> 
-                    <h3 class="hndle"><span></span>Best WordPress Themes</h3> 
-                    <div class="inside">
-                        <center><a href="https://mythemeshop.com/?ref=nik_gandhi007" target="_blank"><img src="<?php echo plugins_url( 'images/300x250.png', __FILE__ ) ;?>" width="250" height="250" border="0"></a></center>
-                        <div style="margin:10px 5px">
-                        </div>
-                    </div></div>
-
-                </div>
+      </div>   
          </div>
      </div>                 
 <?php
-		}
+          }
 	} else if (strtolower ( $action ) == strtolower ( 'delete' )) {
 		
             
@@ -1774,7 +2371,7 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 
                 if(isset($_GET['nonce']) and $_GET['nonce']!=''){
 
-                    $retrieved_nonce=$_GET['nonce'];
+                    $retrieved_nonce=sanitize_text_field($_GET['nonce']);
 
                 }
                 if (!wp_verify_nonce($retrieved_nonce, 'delete_image' ) ){
@@ -1782,6 +2379,18 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 
                     wp_die('Security check fail'); 
                 }
+                
+                if ( ! current_user_can( 'rvg_responsive_video_gallery_delete_video' ) ) {
+
+                    $location='admin.php?page=responsive_video_gallery_with_lightbox_video_management';
+                    $responsive_video_gallery_plus_lightbox_messages=array();
+                    $responsive_video_gallery_plus_lightbox_messages['type']='err';
+                    $responsive_video_gallery_plus_lightbox_messages['message']=__('Access Denied. Please contact your administrator.','wp-responsive-video-gallery-with-lightbox');
+                    update_option('responsive_video_gallery_plus_lightbox_messages', $responsive_video_gallery_plus_lightbox_messages);
+                    echo "<script type='text/javascript'> location.href='$location';</script>";     
+                    exit;   
+
+                 }
                 
 		$uploads = wp_upload_dir ();
 		$baseDir = $uploads ['basedir'];
@@ -1794,7 +2403,7 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 		
 		try {
 			
-			$query = "SELECT * FROM " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox WHERE id=$deleteId";
+			$query = $wpdb->prepare("SELECT * FROM " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox WHERE id=%d", $deleteId);
 			$myrow = $wpdb->get_row ( $query );
 			
 			if (is_object ( $myrow )) {
@@ -1814,24 +2423,25 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
                                 @unlink($pathToImagesFolder.'/'.$myrow->vid . '_big_'.$imageheight.'_'.$imagewidth.'.'.$ext);
 
 				
-				$query = "delete from  " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox where id=$deleteId";
+				$query = $wpdb->prepare("delete from  " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox where id=%d", $deleteId);
 				$wpdb->query ( $query );
 				
 				$responsive_video_gallery_plus_lightbox_messages = array ();
 				$responsive_video_gallery_plus_lightbox_messages ['type'] = 'succ';
-				$responsive_video_gallery_plus_lightbox_messages ['message'] = 'Video deleted successfully.';
+				$responsive_video_gallery_plus_lightbox_messages ['message'] = __('Video deleted successfully.','wp-responsive-video-gallery-with-lightbox');
 				update_option ( 'responsive_video_gallery_plus_lightbox_messages', $responsive_video_gallery_plus_lightbox_messages );
 			}
 		} catch ( Exception $e ) {
 			
 			$responsive_video_gallery_plus_lightbox_messages = array ();
 			$responsive_video_gallery_plus_lightbox_messages ['type'] = 'err';
-			$responsive_video_gallery_plus_lightbox_messages ['message'] = 'Error while deleting video.';
+			$responsive_video_gallery_plus_lightbox_messages ['message'] = __('Error while deleting video.','wp-responsive-video-gallery-with-lightbox');
 			update_option ( 'responsive_video_gallery_plus_lightbox_messages', $responsive_video_gallery_plus_lightbox_messages );
 		}
 		
 		echo "<script type='text/javascript'> location.href='$location';</script>";
 		exit ();
+                
 	} else if (strtolower ( $action ) == strtolower ( 'deleteselected' )) {
 		
 		  if(!check_admin_referer('action_settings_mass_delete','mass_delete_nonce')){
@@ -1839,6 +2449,17 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
                         wp_die('Security check fail'); 
                   }
                     
+                  if ( ! current_user_can( 'rvg_responsive_video_gallery_delete_video' ) ) {
+
+                    $location='admin.php?page=responsive_video_gallery_with_lightbox_video_management';
+                    $responsive_video_gallery_plus_lightbox_messages=array();
+                    $responsive_video_gallery_plus_lightbox_messages['type']='err';
+                    $responsive_video_gallery_plus_lightbox_messages['message']=__('Access Denied. Please contact your administrator.','wp-responsive-video-gallery-with-lightbox');
+                    update_option('responsive_video_gallery_plus_lightbox_messages', $responsive_video_gallery_plus_lightbox_messages);
+                    echo "<script type='text/javascript'> location.href='$location';</script>";     
+                    exit;   
+
+                 }
                     
 		$location = "admin.php?page=responsive_video_gallery_with_lightbox_video_management";
 		
@@ -1862,7 +2483,8 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 
 					foreach ( $deleteto as $img ) {
 						
-						$query = "SELECT * FROM " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox WHERE id=$img";
+                                                $img=intval($img);
+						$query = $wpdb->prepare("SELECT * FROM " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox WHERE id=%d", $img);
 						$myrow = $wpdb->get_row ( $query );
 						
 						if (is_object ( $myrow )) {
@@ -1880,12 +2502,12 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 
 				
 										
-							$query = "delete from  " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox where id=$img";
+							$query = $wpdb->prepare("delete from  " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox where id=%d", $img);
 							$wpdb->query ( $query );
 							
 							$responsive_video_gallery_plus_lightbox_messages = array ();
 							$responsive_video_gallery_plus_lightbox_messages ['type'] = 'succ';
-							$responsive_video_gallery_plus_lightbox_messages ['message'] = 'selected videos deleted successfully.';
+							$responsive_video_gallery_plus_lightbox_messages ['message'] = __('Selected videos deleted successfully.','wp-responsive-video-gallery-with-lightbox');
 							update_option ( 'responsive_video_gallery_plus_lightbox_messages', $responsive_video_gallery_plus_lightbox_messages );
 						}
 					}
@@ -1893,7 +2515,7 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 					
 					$responsive_video_gallery_plus_lightbox_messages = array ();
 					$responsive_video_gallery_plus_lightbox_messages ['type'] = 'err';
-					$responsive_video_gallery_plus_lightbox_messages ['message'] = 'Error while deleting videos.';
+					$responsive_video_gallery_plus_lightbox_messages ['message'] = __('Error while deleting videos.','wp-responsive-video-gallery-with-lightbox');
 					update_option ( 'responsive_video_gallery_plus_lightbox_messages', $responsive_video_gallery_plus_lightbox_messages );
 				}
 				
@@ -1912,9 +2534,14 @@ function responsive_video_gallery_with_lightbox_video_management_func() {
 	}
 }
 function responsive_video_gallery_with_lightbox_video_preview_func() {
-	global $wpdb;
-	
+    
+       if ( ! current_user_can( 'rvg_responsive_video_gallery_preview' ) ) {
 
+            wp_die( __( "Access Denied", "wp-responsive-video-gallery-with-lightbox" ) );
+
+       } 
+
+	global $wpdb;
 	$settings=get_option('responsive_video_gallery_slider_settings');
 	
 	$rand_Numb = uniqid ( 'thumnail_slider' );
@@ -1933,14 +2560,14 @@ function responsive_video_gallery_with_lightbox_video_preview_func() {
 	$baseurl = $uploads ['baseurl'];
 	$baseurl .= '/wp-responsive-video-gallery-with-lightbox/';
 	?>      
-                <style type='text/css'>
-#<?php echo $rand_Num_td;?> .bx-wrapper .bx-viewport {background: none repeat scroll 0 0<?php echo $settings ['scollerBackground'];?> ! important;
-	border: 0px none !important;
-	box-shadow: 0 0 0 0 !important;
-	/*padding:<?php echo $settings['imageMargin']; ?>px !important;*/
-}
-#poststuff #post-body.columns-2{margin-right: 0px}
-</style>
+       <style type='text/css'>
+        #<?php echo $rand_Num_td;?> .bx-wrapper .bx-viewport {background: none repeat scroll 0 0<?php echo $settings ['scollerBackground'];?> ! important;
+                border: 0px none !important;
+                box-shadow: 0 0 0 0 !important;
+                /*padding:<?php echo $settings['imageMargin']; ?>px !important;*/
+        }
+        #poststuff #post-body.columns-2{margin-right: 0px}
+        </style>
 <?php
 	$wpcurrentdir = dirname ( __FILE__ );
 	$wpcurrentdir = str_replace ( "\\", "/", $wpcurrentdir );
@@ -1952,6 +2579,13 @@ function responsive_video_gallery_with_lightbox_video_preview_func() {
 				<div style="float: left; width: 100%;">
 					<div class="wrap">
 						<h2>Slider Preview</h2>
+						<?php
+						if ( isset( $settings['slider_engine'] ) && $settings['slider_engine'] === 'modern' && is_array( $settings ) ) {
+							echo rvg_render_modern_slider_output( $settings );
+							echo '</div></div></div>';
+							return;
+						}
+						?>
 						
                             <?php if (is_array($settings)) { ?>
                                 <div id="poststuff">
@@ -1961,7 +2595,7 @@ function responsive_video_gallery_with_lightbox_video_preview_func() {
                                             <?php $url = plugin_dir_url(__FILE__); ?>           
 
                                             <div style="width: auto; postion: relative" id="<?php echo $rand_Num_td; ?>">
-						 <div id="<?php echo $rand_Numb; ?>" class="responsiveSlider" style="margin-top: 2px !important; visibility: hidden;">
+						 <div id="<?php echo $rand_Numb; ?>" class="responsiveSlider" style="margin-top: 2px !important;display:none;">
 						<?php
                                                             global $wpdb;
                                                             $imageheight = $settings ['imageheight'];
@@ -2069,7 +2703,7 @@ function responsive_video_gallery_with_lightbox_video_preview_func() {
                                                                      
                                                                       
 			                                           ?>
-                                                                        <div>
+                                                                    <div class="i13_bx_slider">
                                                                                 <a rel="<?php echo $randOmeRel;?>" data-overlay="1" data-title="<?php echo $title;?>" class="video_lbox" href="<?php echo $embed_url;?>">
                                                                               <img    src="<?php echo $outputimg; ?>" alt="<?php echo $rowTitle; ?>" title="<?php if(trim($rowDescrption)!=''){ echo $rowDescrption;} else{echo $rowTitle;}; ?>" />
                                                                              <span class="playbtnCss"></span>   
@@ -2082,12 +2716,10 @@ function responsive_video_gallery_with_lightbox_video_preview_func() {
                                                 </div>
 			                  </div>
 					  <script>
-                                                        var $n = jQuery.noConflict();
-                                                        var uniqObj=$n("a[rel='<?php echo $randOmeRel;?>']");
-                                                           
-                                                       $n(document).ready(function(){
-                                                           var <?php echo $rand_var_name; ?> = $n('#<?php echo $rand_Num_td; ?>').html();
-                                                        $n('#<?php echo $rand_Numb; ?>').bxSlider({
+                                                       jQuery(document).ready(function(){
+                                                           jQuery("#<?php echo $rand_Numb; ?>").show();
+                                                           var <?php echo $rand_var_name; ?> = jQuery('#<?php echo $rand_Num_td; ?>').html();
+                                                        jQuery('#<?php echo $rand_Numb; ?>').bxSlider({
                                                         <?php if($settings['visible']==1 ):?>
                                                              mode:'fade',
                                                          <?php endif;?>
@@ -2095,28 +2727,28 @@ function responsive_video_gallery_with_lightbox_video_preview_func() {
                                                         minSlides: <?php echo $settings['min_visible']; ?>,
                                                         maxSlides: <?php echo $settings['visible']; ?>,
                                                         moveSlides: <?php echo $settings['scroll']; ?>,
+                                                        preventDefaultSwipeY: false,
                                                         slideMargin:<?php echo $settings['imageMargin']; ?>,
                                                         speed:<?php echo $settings['speed']; ?>,
                                                         pause:<?php echo $settings['pause']; ?>,
-                                                        <?php if ($settings['pauseonmouseover'] and $settings['auto']) { ?>
+                                                        <?php if($settings['pauseonmouseover'] and ($settings['auto']==1 or $settings['auto']==2) ){ ?>
                                                               autoHover: true,
                                                             <?php
                                                                 } else {
-                                                                        if ($settings ['auto']) {
+                                                                        if ($settings['auto']==1 or $settings['auto']==2) {
                                                              ?>
                                                            autoHover:false,
                                                            <?php
                                                                 }
                                                             }
                                                          ?>
-                                                        <?php if ($settings['auto']): ?>
+                                                        <?php if ($settings['auto']==1): ?>
                                                             controls:false,
                                                         <?php else: ?>
                                                             controls:true,
                                                         <?php endif; ?>
-                                                            pager:false,
                                                             useCSS:false,
-                                                   <?php if ($settings['auto']): ?>
+                                                   <?php if($settings['auto']==1 or $settings['auto']==2):?>
                                                             autoStart:true,
                                                             autoDelay:200,
                                                             auto:true,
@@ -2126,45 +2758,122 @@ function responsive_video_gallery_with_lightbox_video_preview_func() {
                                                   <?php else: ?>
                                                             infiniteLoop: false,
                                                   <?php endif; ?>
-                                                         captions:false,
-                                                            pager:false,
-                                                   onSliderLoad: function(){
+                                                  <?php if($settings['show_pager']):?>
+                                                     pager:true, 
+                                                   <?php else:?>
+                                                     pager:false,
+                                                   <?php endif;?>
+                                                   <?php if($settings['show_caption']):?>
+                                                     captions:true, 
+                                                   <?php else:?>
+                                                     captions:false,
+                                                   <?php endif;?>
+                                                       onSlideBefore: function(slideElement){
+                                                        
+                                                         jQuery(slideElement).find('img').each(function(index, elm) {
+                                                                
+                                                                 if(!elm.complete || elm.naturalWidth === 0){
+
+                                                                    var toload='';
+                                                                    var toloadval='';
+                                                                    jQuery.each(elm.attributes, function(i, attrib){
+
+                                                                        var value = attrib.value;
+                                                                        var aname=attrib.name;
+
+                                                                        var pattern = /^((http|https):\/\/)/;
+
+                                                                        if(pattern.test(value) && aname!='src' && aname.indexOf('data-html5_vurl')==-1) {
+
+                                                                            toload=aname;
+                                                                            toloadval=value;
+                                                                            }
+                                                                        // do your magic :-)
+                                                                    });
+
+                                                                    vsrc= jQuery(elm).attr("src");
+                                                                    jQuery(elm).removeAttr("src");
+                                                                    dsrc= jQuery(elm).attr("data-src");
+                                                                    lsrc= jQuery(elm).attr("data-lazy-src");
+
+                                                                    if(dsrc!== undefined && dsrc!='' && dsrc!=vsrc){
+                                                                             jQuery(elm).attr("src",dsrc);
+                                                                        }
+                                                                        else if(lsrc!== undefined && lsrc!=vsrc){
+
+                                                                             jQuery(elm).attr("src",lsrc);
+                                                                        }
+                                                                         else if(toload!='' && toload!='srcset' && toloadval!='' && toloadval!=vsrc){
+
+                                                                            $(elm).attr("src",toloadval);
+
+
+                                                                            } 
+                                                                        else{
+
+                                                                             jQuery(elm).attr("src",vsrc);
+
+                                                                        }   
+
+                                                                    elm= jQuery(elm)[0];      
+                                                                    if(!elm.complete && elm.naturalHeight == 0){
+
+                                                                         jQuery(elm).removeAttr('loading');
+                                                                         jQuery(elm).removeAttr('data-lazy-type');
+
+
+                                                                         jQuery(elm).removeClass('lazy');
+
+                                                                         jQuery(elm).removeClass('lazyLoad');
+                                                                         jQuery(elm).removeClass('lazy-loaded');
+                                                                         jQuery(elm).removeClass('jetpack-lazy-image');
+                                                                         jQuery(elm).removeClass('jetpack-lazy-image--handled');
+                                                                         jQuery(elm).removeClass('lazy-hidden');
+
+                                                                }
+
+                                                           
+                                                            }
+                                                        
+                                                         });
+
+                                                   },  
+                                                    onSliderLoad: function(){
                                    
-                                                       $n("#<?php echo $rand_Numb; ?>").css("visibility", "visible");
-                                                        $n(".video_lbox").fancybox({
-                                                        'type'    : "iframe",
-                                                        'overlayColor':'#000000',
-                                                         'padding': 10,
-                                                         'autoScale': true,
-                                                         'autoDimensions':true,
-                                                         'transitionIn': 'none',
-                                                         'uniqObj':uniqObj,
-                                                         'transitionOut': 'none',
-                                                         'titlePosition': 'outside',
-                                                         <?php if ($settings['circular']): ?>
-                                                         'cyclic':true,
-                                                        <?php else: ?>
-                                                         'cyclic':false,
-                                                        <?php endif; ?>
-                                                         'hideOnContentClick':false,
-                                                         'width' : 650,
-                                                         'height' : 400,
-                                                         'titleFormat': function(title, currentArray, currentIndex, currentOpts) {
-
-                                                             var currtElem = $n('#<?php echo $rand_Numb; ?> a[href="'+currentOpts.href+'"]');
-
-                                                             var isoverlay = $n(currtElem).attr('data-overlay')
-
-                                                            if(isoverlay=="1" && $n.trim(title)!=""){
-                                                             return '<span id="fancybox-title-over">' + title  + '</span>';
-                                                            }
-                                                            else{
-                                                                return '';
-                                                            }
-
+                                                       
+                                                        <?php if ( isset($settings['lightbox_engine']) && $settings['lightbox_engine'] === 'legacy' ): ?>
+                                                        jQuery(".video_lbox").fancybox_vgl({
+                                                            'type'    : "iframe",
+                                                            'overlayColor':'#000000',
+                                                            'padding': 10,
+                                                            'autoScale': true,
+                                                            'autoDimensions':true,
+                                                            'uniqObj': jQuery("a[rel^='<?php echo $randOmeRel;?>']"),
+                                                            'transitionIn': 'none',
+                                                            'transitionOut': 'none',
+                                                            'titlePosition': 'outside',
+                                                            <?php if ($settings['circular']): ?>
+                                                            'cyclic':true,
+                                                            <?php else: ?>
+                                                            'cyclic':false,
+                                                            <?php endif; ?>
+                                                            'hideOnContentClick':false,
+                                                            'width' : 650,
+                                                            'height' : 400,
+                                                            'titleFormat': function(title, currentArray, currentIndex, currentOpts) {
+                                                                var currtElem = jQuery('#<?php echo $rand_Numb; ?> a[href="'+currentOpts.href+'"]');
+                                                                var isoverlay = jQuery(currtElem).attr('data-overlay');
+                                                                if(isoverlay=="1" && jQuery.trim(title)!=""){
+                                                                    return '<span id="fancybox_vgl-title-over">' + title  + '</span>';
+                                                                }
+                                                                else{
+                                                                    return '';
+                                                                }
                                                             },
-
-                                                       });
+                                                        });
+                                                        <?php else: ?>
+                                                        RVGLightbox.initGallery(".video_lbox", <?php echo $settings['circular'] ? 'true' : 'false'; ?>);
+                                                        <?php endif; ?>
                                                      
                                      
                                   
@@ -2172,21 +2881,21 @@ function responsive_video_gallery_with_lightbox_video_preview_func() {
                                                       }               
 
                                                 });
-                                                 $n("#<?php echo $rand_Numb; ?>").show();
+                                                 jQuery("#<?php echo $rand_Numb; ?>").show();
                                                    <?php if ($settings['auto']) { ?>
             						 <?php $newrand = rand(0, 1111111111); ?>
                                                            var is_firefox = navigator.userAgent.toLowerCase().indexOf('firefox') > - 1;
                                                             var is_android = navigator.userAgent.toLowerCase().indexOf('android') > - 1;
                                                             var is_iphone = navigator.userAgent.toLowerCase().indexOf('iphone') > - 1;
-                                                            var width = $n(window).width();
+                                                            var width = jQuery(window).width();
                                                           if (is_firefox && (is_android || is_iphone)){
 
 		                                                    } else{
 		                                                    var timer;
-		                                                            $n(window).bind('resize', function(){
-		                                                    if ($n(window).width() != width){
+		                                                            jQuery(window).bind('resize', function(){
+		                                                    if (jQuery(window).width() != width){
 		
-		                                                    width = $n(window).width();
+		                                                    width = jQuery(window).width();
 		                                                            timer && clearTimeout(timer);
 		                                                            timer = setTimeout(onResize<?php echo $newrand; ?>, 600);
 		                                                    }
@@ -2194,9 +2903,10 @@ function responsive_video_gallery_with_lightbox_video_preview_func() {
 		                                            }
 
                                                     function onResize<?php echo $newrand; ?>(){
-                                                    $n('#<?php echo $rand_Num_td; ?>').html('');
-                                                            $n('#<?php echo $rand_Num_td; ?>').html(<?php echo $rand_var_name; ?>);
-                                                            $n('#<?php echo $rand_Numb; ?>').bxSlider({
+                                                    jQuery('#<?php echo $rand_Num_td; ?>').html('');
+                                                            jQuery('#<?php echo $rand_Num_td; ?>').html(<?php echo $rand_var_name; ?>);
+                                                            jQuery("#<?php echo $rand_Numb; ?>").show();
+                                                            jQuery('#<?php echo $rand_Numb; ?>').bxSlider({
 
                                                             	<?php if($settings['visible']==1 ):?>
                                                                 mode:'fade',
@@ -2206,28 +2916,29 @@ function responsive_video_gallery_with_lightbox_video_preview_func() {
                                                             	 maxSlides: <?php echo $settings['visible']; ?>,
                                                             	 moveSlides: <?php echo $settings['scroll']; ?>,
                                                             	 slideMargin:<?php echo $settings['imageMargin']; ?>,
-                                                            	 speed:<?php echo $settings['speed']; ?>,
+                                                                 preventDefaultSwipeY: false,
+                                                             	 speed:<?php echo $settings['speed']; ?>,
                                                             	 pause:<?php echo $settings['pause']; ?>,
-                                                                <?php if ($settings['pauseonmouseover'] and $settings['auto']) { ?>
+                                                                <?php if($settings['pauseonmouseover'] and ($settings['auto']==1 or $settings['auto']==2) ){ ?>
                                                         	  autoHover: true,
                 						<?php
 								  } 
                                                                   else {
-									if ($settings ['auto']) {
+									if ($settings['auto']==1 or $settings['auto']==2) {
 								   ?>
                                                                 	autoHover:false,
                     						   <?php
 									}
 								   }
 							          ?>
-            							  <?php if ($settings['auto']): ?>
+            							  <?php if ($settings['auto']==1): ?>
                                                         	    controls:false,
             							 <?php else: ?>
                                                         	    controls:true,
             							 <?php endif; ?>
                                                     		   pager:false,
                                                             	   useCSS:false,
-            							 <?php if ($settings['auto']): ?>
+            							 <?php if ($settings['auto']==1 or $settings['auto']==2): ?>
                                                         	   autoStart:true,
                                                                    autoDelay:200,
                                                                    auto:true,
@@ -2237,45 +2948,122 @@ function responsive_video_gallery_with_lightbox_video_preview_func() {
             							 <?php else: ?>
                                                        		   infiniteLoop: false,
             						         <?php endif; ?>
-            							 captions:false,
-            							    pager:false,
-            							   onSliderLoad: function(){
-                                   
-                                                                        $n("#<?php echo $rand_Numb; ?>").css("visibility", "visible");
-                                                                         $n(".video_lbox").fancybox({
-                                                                         'type'    : "iframe",
-                                                                         'overlayColor':'#000000',
-                                                                          'padding': 10,
-                                                                          'autoScale': true,
-                                                                          'autoDimensions':true,
-                                                                          'transitionIn': 'none',
-                                                                          'uniqObj':uniqObj,
-                                                                          'transitionOut': 'none',
-                                                                          'titlePosition': 'outside',
-                                                                          <?php if ($settings['circular']): ?>
-                                                                          'cyclic':true,
-                                                                         <?php else: ?>
-                                                                          'cyclic':false,
-                                                                         <?php endif; ?>
-                                                                          'hideOnContentClick':false,
-                                                                          'width' : 650,
-                                                                          'height' : 400,
-                                                                          'titleFormat': function(title, currentArray, currentIndex, currentOpts) {
+            							 <?php if($settings['show_pager']):?>
+                                                                    pager:true, 
+                                                                  <?php else:?>
+                                                                    pager:false,
+                                                                  <?php endif;?>
+                                                                  <?php if($settings['show_caption']):?>
+                                                                    captions:true, 
+                                                                  <?php else:?>
+                                                                    captions:false,
+                                                                  <?php endif;?> 
+                                                                      onSlideBefore: function(slideElement){
+                                                        
+                                                                        jQuery(slideElement).find('img').each(function(index, elm) {
 
-                                                                              var currtElem = $n('#<?php echo $rand_Numb; ?> a[href="'+currentOpts.href+'"]');
+                                                                                if(!elm.complete || elm.naturalWidth === 0){
 
-                                                                              var isoverlay = $n(currtElem).attr('data-overlay')
+                                                                                   var toload='';
+                                                                                   var toloadval='';
+                                                                                   jQuery.each(elm.attributes, function(i, attrib){
 
-                                                                             if(isoverlay=="1" && $n.trim(title)!=""){
-                                                                              return '<span id="fancybox-title-over">' + title  + '</span>';
-                                                                             }
-                                                                             else{
-                                                                                 return '';
-                                                                             }
+                                                                                       var value = attrib.value;
+                                                                                       var aname=attrib.name;
 
-                                                                             },
+                                                                                       var pattern = /^((http|https):\/\/)/;
+
+                                                                                       if(pattern.test(value) && aname!='src' && aname.indexOf('data-html5_vurl')==-1) {
+
+                                                                                           toload=aname;
+                                                                                           toloadval=value;
+                                                                                           }
+                                                                                       // do your magic :-)
+                                                                                   });
+
+                                                                                   vsrc= jQuery(elm).attr("src");
+                                                                                   jQuery(elm).removeAttr("src");
+                                                                                   dsrc= jQuery(elm).attr("data-src");
+                                                                                   lsrc= jQuery(elm).attr("data-lazy-src");
+
+                                                                                   if(dsrc!== undefined && dsrc!='' && dsrc!=vsrc){
+                                                                                            jQuery(elm).attr("src",dsrc);
+                                                                                       }
+                                                                                       else if(lsrc!== undefined && lsrc!=vsrc){
+
+                                                                                            jQuery(elm).attr("src",lsrc);
+                                                                                       }
+                                                                                        else if(toload!='' && toload!='srcset' && toloadval!='' && toloadval!=vsrc){
+
+                                                                                           $(elm).attr("src",toloadval);
+
+
+                                                                                           } 
+                                                                                       else{
+
+                                                                                            jQuery(elm).attr("src",vsrc);
+
+                                                                                       }   
+
+                                                                                   elm= jQuery(elm)[0];      
+                                                                                   if(!elm.complete && elm.naturalHeight == 0){
+
+                                                                                        jQuery(elm).removeAttr('loading');
+                                                                                        jQuery(elm).removeAttr('data-lazy-type');
+
+
+                                                                                        jQuery(elm).removeClass('lazy');
+
+                                                                                        jQuery(elm).removeClass('lazyLoad');
+                                                                                        jQuery(elm).removeClass('lazy-loaded');
+                                                                                        jQuery(elm).removeClass('jetpack-lazy-image');
+                                                                                        jQuery(elm).removeClass('jetpack-lazy-image--handled');
+                                                                                        jQuery(elm).removeClass('lazy-hidden');
+
+                                                                               }
+
+
+                                                                           }
 
                                                                         });
+
+                                                                  },   
+            							   onSliderLoad: function(){
+                                   
+                                                                        
+                                                                         <?php if ( isset($settings['lightbox_engine']) && $settings['lightbox_engine'] === 'legacy' ): ?>
+                                                                         jQuery(".video_lbox").fancybox_vgl({
+                                                                             'type'    : "iframe",
+                                                                             'overlayColor':'#000000',
+                                                                             'padding': 10,
+                                                                             'autoScale': true,
+                                                                             'autoDimensions':true,
+                                                                             'uniqObj': jQuery("a[rel^='<?php echo $randOmeRel;?>']"),
+                                                                             'transitionIn': 'none',
+                                                                             'transitionOut': 'none',
+                                                                             'titlePosition': 'outside',
+                                                                             <?php if ($settings['circular']): ?>
+                                                                             'cyclic':true,
+                                                                             <?php else: ?>
+                                                                             'cyclic':false,
+                                                                             <?php endif; ?>
+                                                                             'hideOnContentClick':false,
+                                                                             'width' : 650,
+                                                                             'height' : 400,
+                                                                             'titleFormat': function(title, currentArray, currentIndex, currentOpts) {
+                                                                                 var currtElem = jQuery('#<?php echo $rand_Numb; ?> a[href="'+currentOpts.href+'"]');
+                                                                                 var isoverlay = jQuery(currtElem).attr('data-overlay');
+                                                                                 if(isoverlay=="1" && jQuery.trim(title)!=""){
+                                                                                     return '<span id="fancybox_vgl-title-over">' + title  + '</span>';
+                                                                                 }
+                                                                                 else{
+                                                                                     return '';
+                                                                                 }
+                                                                             },
+                                                                         });
+                                                                         <?php else: ?>
+                                                                         RVGLightbox.initGallery(".video_lbox", <?php echo $settings['circular'] ? 'true' : 'false'; ?>);
+                                                                         <?php endif; ?>
 
 
 
@@ -2286,11 +3074,134 @@ function responsive_video_gallery_with_lightbox_video_preview_func() {
                                                             
                                                     }
 
-		        		<?php } ?>
+                                                    <?php } ?>
 
 			        		 
+                                                            window.rebind<?php echo $rand_Numb;?> = function() {
+
+                                                                    <?php if ( isset($settings['lightbox_engine']) && $settings['lightbox_engine'] === 'legacy' ): ?>
+                                                                    jQuery(".video_lbox").fancybox_vgl({
+                                                                        'type'    : "iframe",
+                                                                        'overlayColor':'#000000',
+                                                                        'padding': 10,
+                                                                        'autoScale': true,
+                                                                        'autoDimensions':true,
+                                                                        'uniqObj': jQuery("a[rel^='<?php echo $randOmeRel;?>']"),
+                                                                        'transitionIn': 'none',
+                                                                        'transitionOut': 'none',
+                                                                        'titlePosition': 'outside',
+                                                                        <?php if ($settings['circular']): ?>
+                                                                        'cyclic':true,
+                                                                        <?php else: ?>
+                                                                        'cyclic':false,
+                                                                        <?php endif; ?>
+                                                                        'hideOnContentClick':false,
+                                                                        'width' : 650,
+                                                                        'height' : 400,
+                                                                        'titleFormat': function(title, currentArray, currentIndex, currentOpts) {
+                                                                            var currtElem = jQuery('#<?php echo $rand_Numb; ?> a[href="'+currentOpts.href+'"]');
+                                                                            var isoverlay = jQuery(currtElem).attr('data-overlay');
+                                                                            if(isoverlay=="1" && jQuery.trim(title)!=""){
+                                                                                return '<span id="fancybox_vgl-title-over">' + title  + '</span>';
+                                                                            }
+                                                                            else{
+                                                                                return '';
+                                                                            }
+                                                                        },
+                                                                    });
+                                                                    <?php else: ?>
+                                                                    RVGLightbox.initGallery(".video_lbox", <?php echo $settings['circular'] ? 'true' : 'false'; ?>);
+                                                                    <?php endif; ?>
+
+                                                            }
+                                                 
 		
 		                                    });
+                                                    
+                                                       window.addEventListener('load', function() {
+
+
+                                                            setTimeout(function(){ 
+
+                                                                    if(jQuery("#<?php echo $rand_Numb;?>").find('.bx-loading').length>0){
+
+                                                                            jQuery("#<?php echo $rand_Numb;?>").find('img').each(function(index, elm) {
+
+                                                                                     if(!elm.complete || elm.naturalWidth === 0){
+                                                                                         
+                                                                                        var toload='';
+                                                                                        var toloadval='';
+                                                                                        jQuery.each(this.attributes, function(i, attrib){
+
+                                                                                                var value = attrib.value;
+                                                                                                var aname=attrib.name;
+
+                                                                                                var pattern = /^((http|https):\/\/)/;
+
+                                                                                                if(pattern.test(value) && aname!='src') {
+
+                                                                                                        toload=aname;
+                                                                                                        toloadval=value;
+                                                                                                 }
+                                                                                                // do your magic :-)
+                                                                                         });
+
+                                                                                                vsrc=jQuery(elm).attr("src");
+                                                                                                jQuery(elm).removeAttr("src");
+                                                                                                dsrc=jQuery(elm).attr("data-src");
+                                                                                                lsrc=jQuery(elm).attr("data-lazy-src");
+
+
+                                                                                                   if(dsrc!== undefined && dsrc!='' && dsrc!=vsrc){
+                                                                                                                                 jQuery(elm).attr("src",dsrc);
+                                                                                                        }
+                                                                                                        else if(lsrc!== undefined && lsrc!=vsrc){
+
+                                                                                                                         jQuery(elm).attr("src",lsrc);
+                                                                                                        }
+                                                                                                        else if(toload!='' && toload!='srcset' && toloadval!='' && toloadval!=vsrc){
+
+                                                                                                                jQuery(elm).removeAttr(toload);
+                                                                                                                jQuery(elm).attr("src",toloadval);
+
+
+                                                                                                            } 
+                                                                                                        else{
+
+                                                                                                                        jQuery(elm).attr("src",vsrc);
+
+                                                                                                   }   
+
+                                                                                                elm=jQuery(elm)[0];      
+                                                                                                 if(!elm.complete && elm.naturalHeight == 0){
+
+                                                                                                                 jQuery(elm).removeAttr('loading');
+                                                                                                                 jQuery(elm).removeAttr('data-lazy-type');
+
+
+                                                                                                                 jQuery(elm).removeClass('lazy');
+
+                                                                                                                 jQuery(elm).removeClass('lazyLoad');
+                                                                                                                 jQuery(elm).removeClass('lazy-loaded');
+                                                                                                                 jQuery(elm).removeClass('jetpack-lazy-image');
+                                                                                                                 jQuery(elm).removeClass('jetpack-lazy-image--handled');
+                                                                                                                 jQuery(elm).removeClass('lazy-hidden');
+
+                                                                                                }
+                                                                                     }
+
+                                                                                }).promise().done( function(){ 
+
+                                                                                   
+                                                                                        jQuery("#<?php echo $rand_Num_td;?>").find('.bx-loading').remove();
+                                                                                } );
+
+                                                                        }
+
+
+                                                               }, 6000);
+
+                                                    });
                                              </script>
 		
 					</div>
@@ -2303,24 +3214,244 @@ function responsive_video_gallery_with_lightbox_video_preview_func() {
 			</div>
                 <?php if (is_array($settings)) { ?>
 
-                    <h3>To print this video gallery into WordPress Post/Page use below code</h3>
+                    <h3><?php echo __('To print this video carousel into WordPress Post/Page use below code','wp-responsive-video-gallery-with-lightbox');?></h3>
                             <input type="text" value='[print_responsive_video_gallery_plus_lightbox] '
                                     style="width: 400px; height: 30px"
                                     onclick="this.focus(); this.select()" />
                             <div class="clear"></div>
-                            <h3>To print this video gallery into WordPress theme/template PHP files use below code</h3>
+                            <h3><?php echo __('To print this video carousel into WordPress theme/template PHP files use below code','wp-responsive-video-gallery-with-lightbox');?></h3>
                     <?php
 			$shortcode = '[print_responsive_video_gallery_plus_lightbox]';
 		    ?>
                     <input type="text" value="&lt;?php echo do_shortcode('<?php echo htmlentities($shortcode, ENT_QUOTES); ?>'); ?&gt;" style="width: 400px; height: 30px" onclick="this.focus(); this.select()" />
+                    <div class="clear"></div>
+                    <h3><?php echo __('Or use the block editor', 'wp-responsive-video-gallery-with-lightbox'); ?></h3>
+                    <p><?php echo __('In the block editor, click the + inserter and search for "Responsive Video Gallery" - no shortcode needed.', 'wp-responsive-video-gallery-with-lightbox'); ?></p>
                 <?php } ?>
                 <div class="clear"></div>
  <?php
    }
-function print_responsive_video_gallery_plus_lightbox_func($atts) {
-    ob_start();
+/**
+ * Modern slider engine render path - self-contained (own data query, own markup, own
+ * JS init) rather than threaded through the Legacy/bxSlider function, to avoid risking
+ * regressions in the existing, well-tested Legacy code path.
+ */
+/**
+ * Builds a VideoObject/ItemList JSON-LD block for the given video rows, so search
+ * engines can show rich video results (thumbnail, title) directly in search. Output
+ * as a single minified line - a pretty-printed, multi-line JSON block gets mangled by
+ * wpautop() when it runs on shortcode output inside post content, which silently
+ * breaks the schema without any visible error on the page itself.
+ */
+function rvg_build_video_schema_jsonld( $rows, $baseurl ) {
 
-	global $wpdb;
+	if ( empty( $rows ) ) {
+		return '';
+	}
+
+	$items = array();
+	foreach ( $rows as $row ) {
+		if ( empty( $row['videotitle'] ) || empty( $row['image_name'] ) ) {
+			continue;
+		}
+
+		$video = array(
+			'@type'        => 'VideoObject',
+			'name'         => wp_strip_all_tags( $row['videotitle'] ),
+			'description'  => ! empty( $row['video_description'] ) ? wp_strip_all_tags( $row['video_description'] ) : wp_strip_all_tags( $row['videotitle'] ),
+			'thumbnailUrl' => array( $baseurl . $row['image_name'] ),
+			'uploadDate'   => ! empty( $row['createdon'] ) ? gmdate( 'c', strtotime( $row['createdon'] ) ) : gmdate( 'c' ),
+		);
+
+		if ( ! empty( $row['embed_url'] ) ) {
+			$video['embedUrl'] = ( strpos( $row['embed_url'], '//' ) === 0 ? 'https:' : '' ) . $row['embed_url'];
+		}
+
+		$items[] = $video;
+	}
+
+	if ( empty( $items ) ) {
+		return '';
+	}
+
+	if ( 1 === count( $items ) ) {
+		$schema = array_merge( array( '@context' => 'https://schema.org' ), $items[0] );
+	} else {
+		$schema = array(
+			'@context'        => 'https://schema.org',
+			'@type'           => 'ItemList',
+			'itemListElement' => array_map(
+				function ( $video, $i ) {
+					return array(
+						'@type'    => 'ListItem',
+						'position' => $i + 1,
+						'item'     => $video,
+					);
+				},
+				$items,
+				array_keys( $items )
+			),
+		);
+	}
+
+	return '<script type="application/ld+json">' . wp_json_encode( $schema ) . '</script>';
+}
+
+function rvg_render_modern_slider_output( $settings ) {
+
+    wp_enqueue_style('wp-video-gallery-lighbox-style', plugins_url('/css/wp-video-gallery-lighbox-style.css', __FILE__), array(), '1.0.26');
+    wp_enqueue_style('rvg-modern-slider-style', plugins_url('/css/rvg-modern-slider.css', __FILE__), array(), '1.0.45');
+    wp_enqueue_script('rvg-modern-slider-js', plugins_url('/js/rvg-modern-slider.js', __FILE__), array(), '1.0.45', true);
+
+    $rvgLightboxEngine = isset($settings['lightbox_engine']) ? $settings['lightbox_engine'] : 'modern';
+    if ( $rvgLightboxEngine === 'legacy' ) {
+        wp_enqueue_style('vl-box-css', plugins_url('/css/vl-box-css.css', __FILE__), array(), '1.0.25');
+        wp_enqueue_script('vl-box-js', plugins_url('/js/vl-box-js.js', __FILE__), array('jquery'), '1.0.25', true);
+    } else {
+        wp_enqueue_style('rvg-lightbox-css', plugins_url('/css/rvg-lightbox.css', __FILE__), array(), '1.0.26');
+        wp_enqueue_script('rvg-lightbox-js', plugins_url('/js/rvg-lightbox.js', __FILE__), array(), '1.0.26', true);
+    }
+
+    ob_start();
+    global $wpdb;
+
+    $rand_id = uniqid( 'rvg_ms_' );
+    $randOmeRel = uniqid( 'rel_' );
+
+    $wpcurrentdir = dirname( __FILE__ );
+    $wpcurrentdir = str_replace( "\\", "/", $wpcurrentdir );
+
+    $uploads = wp_upload_dir();
+    $baseDir = str_replace( "\\", "/", $uploads['basedir'] );
+    $pathToImagesFolder = $baseDir . '/wp-responsive-video-gallery-with-lightbox';
+    $baseurl = $uploads['baseurl'] . '/wp-responsive-video-gallery-with-lightbox/';
+
+    $imageheight = $settings['imageheight'];
+    $imagewidth  = $settings['imagewidth'];
+
+    $query = "SELECT * FROM " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox order by createdon desc";
+    $rows  = $wpdb->get_results( $query, 'ARRAY_A' );
+
+    $slideStyle = 'width:' . (int) $imagewidth . 'px;height:' . (int) $imageheight . 'px;margin-right:' . (int) $settings['imageMargin'] . 'px;';
+    $sliderMaxWidth = ( (int) $settings['imagewidth'] + (int) $settings['imageMargin'] ) * (int) $settings['visible'] - (int) $settings['imageMargin'];
+    echo rvg_build_video_schema_jsonld( $rows, $baseurl );
+    ?>
+    <div id="<?php echo esc_attr( $rand_id ); ?>" class="rvg-ms-slider" data-visible="<?php echo (int) $settings['visible']; ?>" data-min-visible="<?php echo (int) $settings['min_visible']; ?>" data-scroll="<?php echo (int) $settings['scroll']; ?>" data-speed="<?php echo (int) $settings['speed']; ?>" data-pause="<?php echo (int) $settings['pause']; ?>" data-circular="<?php echo $settings['circular'] ? '1' : '0'; ?>" data-auto="<?php echo ( $settings['auto'] == 1 || $settings['auto'] == 2 ) ? '1' : '0'; ?>" data-pause-on-hover="<?php echo $settings['pauseonmouseover'] ? '1' : '0'; ?>" style="background-color:<?php echo esc_attr( $settings['scollerBackground'] ); ?>; max-width:<?php echo (int) $sliderMaxWidth; ?>px;">
+        <div class="rvg-ms-viewport">
+            <ul class="rvg-ms-track">
+                <?php if ( count( $rows ) > 0 ) : foreach ( $rows as $row ) :
+
+                    $imagename = $row['image_name'];
+                    $imageUploadTo = str_replace( "\\", "/", $pathToImagesFolder . '/' . $imagename );
+                    $pathinfo = pathinfo( $imageUploadTo );
+                    $filenamewithoutextension = $pathinfo['filename'];
+                    $outputimg = '';
+
+                    if ( $settings['resizeImages'] == 0 ) {
+                        $outputimg = $baseurl . $imagename;
+                    } else {
+                        $imagetoCheck = $pathToImagesFolder . '/' . $filenamewithoutextension . '_' . $imageheight . '_' . $imagewidth . '.' . $pathinfo['extension'];
+                        if ( file_exists( $imagetoCheck ) ) {
+                            $outputimg = $baseurl . $filenamewithoutextension . '_' . $imageheight . '_' . $imagewidth . '.' . $pathinfo['extension'];
+                        } elseif ( function_exists( 'wp_get_image_editor' ) ) {
+                            $image = wp_get_image_editor( $pathToImagesFolder . '/' . $imagename );
+                            if ( ! is_wp_error( $image ) ) {
+                                $image->resize( $imagewidth, $imageheight, true );
+                                $image->save( $imagetoCheck );
+                                $outputimg = $baseurl . $filenamewithoutextension . '_' . $imageheight . '_' . $imagewidth . '.' . $pathinfo['extension'];
+                            } else {
+                                $outputimg = $baseurl . $imagename;
+                            }
+                        } else {
+                            $outputimg = $baseurl . $imagename;
+                        }
+                    }
+
+                    $embed_url = $row['embed_url'];
+
+                    $rowTitle = str_replace( array( "'", '"' ), array( '’', '”' ), $row['videotitle'] );
+                    $rowDescrption = strip_tags( str_replace( array( "'", '"' ), array( '’', '”' ), $row['video_description'] ) );
+                    if ( strlen( $rowDescrption ) > 300 ) {
+                        $rowDescrption = substr( $rowDescrption, 0, 300 ) . '...';
+                    }
+
+                    $title = '';
+                    if ( trim( $row['videotitle'] ) != '' ) {
+                        $title = esc_html( $rowTitle );
+                        if ( $row['video_description'] != '' && $settings['show_caption'] ) {
+                            $title .= '<div class="clear_description_">' . esc_html( $rowDescrption ) . '</div>';
+                        }
+                    }
+                    ?>
+                    <li class="rvg-ms-slide" style="<?php echo esc_attr( $slideStyle ); ?>">
+                        <div class="rvg-ms-slide-inner">
+                            <a rel="<?php echo esc_attr( $randOmeRel ); ?>" data-overlay="1" data-title="<?php echo esc_attr( $title ); ?>" class="video_lbox" href="<?php echo esc_url( $embed_url ); ?>">
+                                <img src="<?php echo esc_url( $outputimg ); ?>" alt="<?php echo esc_attr( $rowTitle ); ?>" />
+                                <span class="playbtnCss"></span>
+                                <?php if ( $settings['show_caption'] && $title !== '' ) : ?>
+                                    <span class="rvg-ms-caption"><?php echo wp_kses_post( $title ); ?></span>
+                                <?php endif; ?>
+                            </a>
+                        </div>
+                    </li>
+                <?php endforeach; endif; ?>
+            </ul>
+        </div>
+        <?php if ( count( $rows ) > (int) $settings['visible'] || ( $settings['circular'] && count( $rows ) > 1 ) ) : ?>
+            <button type="button" class="rvg-ms-nav rvg-ms-prev" aria-label="<?php esc_attr_e( 'Previous', 'wp-responsive-video-gallery-with-lightbox' ); ?>">&#10094;</button>
+            <button type="button" class="rvg-ms-nav rvg-ms-next" aria-label="<?php esc_attr_e( 'Next', 'wp-responsive-video-gallery-with-lightbox' ); ?>">&#10095;</button>
+        <?php endif; ?>
+        <?php if ( $settings['show_pager'] ) : ?>
+            <div class="rvg-ms-pager"></div>
+        <?php endif; ?>
+    </div>
+    <script>
+    (function(){
+        function boot(){
+            RVGModernSlider.init('#<?php echo esc_js( $rand_id ); ?>', {
+                visible: <?php echo (int) $settings['visible']; ?>,
+                scroll: <?php echo (int) $settings['scroll']; ?>,
+                speed: <?php echo (int) $settings['speed']; ?>,
+                pause: <?php echo (int) $settings['pause']; ?>,
+                circular: <?php echo $settings['circular'] ? 'true' : 'false'; ?>,
+                auto: <?php echo ( $settings['auto'] == 1 || $settings['auto'] == 2 ) ? 'true' : 'false'; ?>,
+                pauseOnHover: <?php echo $settings['pauseonmouseover'] ? 'true' : 'false'; ?>,
+                lightboxEngine: '<?php echo isset( $settings['lightbox_engine'] ) && $settings['lightbox_engine'] === 'legacy' ? 'legacy' : 'modern'; ?>'
+            });
+        }
+        if (document.readyState === 'complete') { boot(); } else { window.addEventListener('load', boot); }
+    })();
+    </script>
+    <?php
+    return ob_get_clean();
+}
+
+function print_responsive_video_gallery_plus_lightbox_func($atts) {
+
+        $rvgSettingsForEnqueue = get_option('responsive_video_gallery_slider_settings');
+        $rvgLightboxEngine = (is_array($rvgSettingsForEnqueue) && isset($rvgSettingsForEnqueue['lightbox_engine'])) ? $rvgSettingsForEnqueue['lightbox_engine'] : 'modern';
+        $rvgSliderEngine = (is_array($rvgSettingsForEnqueue) && isset($rvgSettingsForEnqueue['slider_engine'])) ? $rvgSettingsForEnqueue['slider_engine'] : 'modern';
+
+        if ( $rvgSliderEngine === 'modern' && is_array( $rvgSettingsForEnqueue ) ) {
+            return rvg_render_modern_slider_output( $rvgSettingsForEnqueue );
+        }
+    
+    
+        wp_enqueue_style('wp-video-gallery-lighbox-style');
+        wp_enqueue_script('jquery');
+        wp_enqueue_script('video-gallery-jc');
+
+        if ( $rvgLightboxEngine === 'legacy' ) {
+            wp_enqueue_style('vl-box-css');
+            wp_enqueue_script('vl-box-js');
+        } else {
+            wp_enqueue_style('rvg-lightbox-css');
+            wp_enqueue_script('rvg-lightbox-js');
+        }
+
+            
+        ob_start();
+        global $wpdb;
 
         $settings=get_option('responsive_video_gallery_slider_settings');
 	$rand_Numb = uniqid ( 'thumnail_slider' );
@@ -2339,9 +3470,7 @@ function print_responsive_video_gallery_plus_lightbox_func($atts) {
 	$baseurl = $uploads ['baseurl'];
 	$baseurl .= '/wp-responsive-video-gallery-with-lightbox/';
         $randOmeRel = uniqid ( 'rel_' );
-        $randOmVlBox=  uniqid('video_lbox_');
-	?>      
-     <style type='text/css'>
+	?><!-- print_responsive_video_gallery_plus_lightbox_func --><style type='text/css'>
         #<?php echo $rand_Num_td;?> .bx-wrapper .bx-viewport {
                 background: none repeat scroll 0 0<?php echo $settings ['scollerBackground'];?> ! important;
                 border: 0px none !important;
@@ -2358,13 +3487,14 @@ function print_responsive_video_gallery_plus_lightbox_func($atts) {
                                  <?php $url = plugin_dir_url(__FILE__); ?>           
 
                                  <div style="width: auto; postion: relative" id="<?php echo $rand_Num_td; ?>">
-                                      <div id="<?php echo $rand_Numb; ?>" class="responsiveSlider" style="margin-top: 2px !important; visibility: hidden;">
+                                      <div id="<?php echo $rand_Numb; ?>" class="responsiveSlider" style="margin-top: 2px !important; display:none">
                                      <?php
                                                  global $wpdb;
                                                  $imageheight = $settings ['imageheight'];
                                                  $imagewidth = $settings ['imagewidth'];
                                                  $query = "SELECT * FROM " . $wpdb->prefix . "responsive_video_gallery_plus_responsive_lightbox order by createdon desc";
                                                  $rows = $wpdb->get_results ( $query, 'ARRAY_A' );
+                                                 echo rvg_build_video_schema_jsonld( $rows, $baseurl );
 
                                                  if (count ( $rows ) > 0) {
                                                          foreach ( $rows as $row ) {
@@ -2465,8 +3595,8 @@ function print_responsive_video_gallery_plus_lightbox_func($atts) {
 
 
                                                         ?>
-                                                         <div>
-                                                            <a rel="<?php echo $randOmeRel;?>" data-overlay="1" data-title="<?php echo $title;?>" class="<?php echo $randOmVlBox;?>" href="<?php echo $embed_url;?>">
+                                                         <div class="i13_bx_slider">
+                                                            <a rel="<?php echo $randOmeRel;?>" data-overlay="1" data-title="<?php echo htmlentities($title);?>" class="video_lbox" href="<?php echo $embed_url;?>">
                                                                 <img    src="<?php echo $outputimg; ?>" alt="<?php echo $rowTitle; ?>" title="<?php if(trim($rowDescrption)!=''){ echo $rowDescrption;} else{echo $rowTitle;}; ?>" />
                                                                 <span class="playbtnCss">
                                                                  </span> 
@@ -2480,41 +3610,49 @@ function print_responsive_video_gallery_plus_lightbox_func($atts) {
                                      </div>
                                </div>
                             <script>
-                                          var $n = jQuery.noConflict();
-                                          <?php $uniqId=uniqid();?>
-                                          var uniqObj<?php echo $uniqId?>=$n("a[rel='<?php echo $randOmeRel;?>']");
-                                          $n(document).ready(function(){
-                                             var <?php echo $rand_var_name; ?> = $n('#<?php echo $rand_Num_td; ?>').html();
-                                          $n('#<?php echo $rand_Numb; ?>').bxSlider({
+                            
+                          
+                                    <?php $intval= uniqid('interval_');?>
+
+                                   var <?php echo $intval;?> = setInterval(function() {
+
+                                   if(document.readyState === 'complete') {
+
+                                         clearInterval(<?php echo $intval;?>);
+                                      
+                                          jQuery("#<?php echo $rand_Numb; ?>").show();
+                                          var <?php echo $rand_var_name; ?> = jQuery('#<?php echo $rand_Num_td; ?>').html();
+                                          jQuery('#<?php echo $rand_Numb; ?>').bxSlider({
                                           <?php if($settings['visible']==1 ):?>
                                                mode:'fade',
                                            <?php endif;?>
                                                   slideWidth: <?php echo $settings['imagewidth']; ?>,
                                           minSlides: <?php echo $settings['min_visible']; ?>,
+                                          preventDefaultSwipeY: false,
                                           maxSlides: <?php echo $settings['visible']; ?>,
                                           moveSlides: <?php echo $settings['scroll']; ?>,
                                           slideMargin:<?php echo $settings['imageMargin']; ?>,
                                           speed:<?php echo $settings['speed']; ?>,
                                           pause:<?php echo $settings['pause']; ?>,
-                                          <?php if ($settings['pauseonmouseover'] and $settings['auto']) { ?>
+                                         <?php if($settings['pauseonmouseover'] and ($settings['auto']==1 or $settings['auto']==2) ){ ?>
                                                 autoHover: true,
                                               <?php
                                                   } else {
-                                                          if ($settings ['auto']) {
+                                                          if ($settings['auto']==1 or $settings['auto']==2) {
                                                ?>
                                              autoHover:false,
                                              <?php
                                                   }
                                               }
                                            ?>
-                                          <?php if ($settings['auto']): ?>
+                                          <?php if ($settings['auto']==1): ?>
                                               controls:false,
                                           <?php else: ?>
                                               controls:true,
                                           <?php endif; ?>
                                               pager:false,
                                               useCSS:false,
-                                     <?php if ($settings['auto']): ?>
+                                     <?php if($settings['auto']==1 or $settings['auto']==2):?>
                                               autoStart:true,
                                               autoDelay:200,
                                               auto:true,
@@ -2524,48 +3662,123 @@ function print_responsive_video_gallery_plus_lightbox_func($atts) {
                                     <?php else: ?>
                                               infiniteLoop: false,
                                     <?php endif; ?>
-                                              captions:false,
-                                              pager:false,
-                                                     
-                                  onSliderLoad: function(){
+                                    <?php if($settings['show_pager']):?>
+                                    pager:true, 
+                                  <?php else:?>
+                                    pager:false,
+                                  <?php endif;?>
+                                  <?php if($settings['show_caption']):?>
+                                    captions:true, 
+                                  <?php else:?>
+                                    captions:false,
+                                  <?php endif;?>     
+                                        onSlideBefore: function(slideElement){
+
+                                                        jQuery(slideElement).find('img').each(function(index, elm) {
+
+                                                                if(!elm.complete || elm.naturalWidth === 0){
+
+                                                                   var toload='';
+                                                                   var toloadval='';
+                                                                   jQuery.each(elm.attributes, function(i, attrib){
+
+                                                                       var value = attrib.value;
+                                                                       var aname=attrib.name;
+
+                                                                       var pattern = /^((http|https):\/\/)/;
+
+                                                                       if(pattern.test(value) && aname!='src' && aname.indexOf('data-html5_vurl')==-1) {
+
+                                                                           toload=aname;
+                                                                           toloadval=value;
+                                                                           }
+                                                                       // do your magic :-)
+                                                                   });
+
+                                                                   vsrc= jQuery(elm).attr("src");
+                                                                   jQuery(elm).removeAttr("src");
+                                                                   dsrc= jQuery(elm).attr("data-src");
+                                                                   lsrc= jQuery(elm).attr("data-lazy-src");
+
+                                                                   if(dsrc!== undefined && dsrc!='' && dsrc!=vsrc){
+                                                                            jQuery(elm).attr("src",dsrc);
+                                                                       }
+                                                                       else if(lsrc!== undefined && lsrc!=vsrc){
+
+                                                                            jQuery(elm).attr("src",lsrc);
+                                                                       }
+                                                                        else if(toload!='' && toload!='srcset' && toloadval!='' && toloadval!=vsrc){
+
+                                                                           $(elm).attr("src",toloadval);
+
+
+                                                                           } 
+                                                                       else{
+
+                                                                            jQuery(elm).attr("src",vsrc);
+
+                                                                       }   
+
+                                                                   elm= jQuery(elm)[0];      
+                                                                   if(!elm.complete && elm.naturalHeight == 0){
+
+                                                                        jQuery(elm).removeAttr('loading');
+                                                                        jQuery(elm).removeAttr('data-lazy-type');
+
+
+                                                                        jQuery(elm).removeClass('lazy');
+
+                                                                        jQuery(elm).removeClass('lazyLoad');
+                                                                        jQuery(elm).removeClass('lazy-loaded');
+                                                                        jQuery(elm).removeClass('jetpack-lazy-image');
+                                                                        jQuery(elm).removeClass('jetpack-lazy-image--handled');
+                                                                        jQuery(elm).removeClass('lazy-hidden');
+
+                                                               }
+
+
+                                                           }
+
+                                                        });
+
+                                                  },    
+                                                    onSliderLoad: function(){
                                    
-                                     $n("#<?php echo $rand_Numb; ?>").css("visibility", "visible");
                                      
-                                     $n(".<?php echo $randOmVlBox;?>").fancybox({
-                                            'type'    : "iframe",
-                                            'overlayColor':'#000000',
-                                             'padding': 10,
-                                             'autoScale': true,
-                                             'autoDimensions':true,
-                                             'uniqObj':uniqObj<?php echo $uniqId;?>,
-                                             'transitionIn': 'none',
-                                             'transitionOut': 'none',
-                                             'titlePosition': 'outside',
-                                             <?php if ($settings['circular']): ?>
-                                                   'cyclic':true,
-                                                  <?php else: ?>
-                                                   'cyclic':false,
-                                                  <?php endif; ?>
-                                             'hideOnContentClick':false,
-                                             'width' : 650,
-                                              'height' : 400,
-                                             'titleFormat': function(title, currentArray, currentIndex, currentOpts) {
-
-                                               var currtElem = $n('#<?php echo $rand_Numb; ?> a[href="'+currentOpts.href+'"]');
-
-                                               var isoverlay = $n(currtElem).attr('data-overlay')
-
-                                              if(isoverlay=="1" && $n.trim(title)!=""){
-                                               return '<span id="fancybox-title-over">' + title  + '</span>';
-                                              }
-                                              else{
-                                                  return '';
-                                              }
-
-                                           },
-
-                                        }); 
                                      
+                                                                          <?php if ( isset($settings['lightbox_engine']) && $settings['lightbox_engine'] === 'legacy' ): ?>
+                                                                          jQuery(".video_lbox").fancybox_vgl({
+                                                                              'type'    : "iframe",
+                                                                              'overlayColor':'#000000',
+                                                                              'padding': 10,
+                                                                              'autoScale': true,
+                                                                              'autoDimensions':true,
+                                                                              'uniqObj': jQuery("a[rel^='<?php echo $randOmeRel;?>']"),
+                                                                              'transitionIn': 'none',
+                                                                              'transitionOut': 'none',
+                                                                              'titlePosition': 'outside',
+                                                                              <?php if ($settings['circular']): ?>
+                                                                              'cyclic':true,
+                                                                              <?php else: ?>
+                                                                              'cyclic':false,
+                                                                              <?php endif; ?>
+                                                                              'hideOnContentClick':false,
+                                                                              'width' : 650,
+                                                                              'height' : 400,
+                                                                              'titleFormat': function(title, currentArray, currentIndex, currentOpts) {
+                                                                                  var currtElem = jQuery('#<?php echo $rand_Numb; ?> a[href="'+currentOpts.href+'"]');
+                                                                                  var isoverlay = jQuery(currtElem).attr('data-overlay');
+                                                                                  if(isoverlay=="1" && jQuery.trim(title)!=""){
+                                                                                      return '<span id="fancybox_vgl-title-over">' + title  + '</span>';
+                                                                                  }
+                                                                                  else{
+                                                                                      return '';
+                                                                                  }
+                                                                              },
+                                                                          });
+                                                                          <?php else: ?>
+                                                                          RVGLightbox.initGallery(".video_lbox", <?php echo $settings['circular'] ? 'true' : 'false'; ?>);
+                                                                          <?php endif; ?>
                                   }                                                         
                                   
                                  
@@ -2576,15 +3789,15 @@ function print_responsive_video_gallery_plus_lightbox_func($atts) {
                                              var is_firefox = navigator.userAgent.toLowerCase().indexOf('firefox') > - 1;
                                               var is_android = navigator.userAgent.toLowerCase().indexOf('android') > - 1;
                                               var is_iphone = navigator.userAgent.toLowerCase().indexOf('iphone') > - 1;
-                                              var width = $n(window).width();
+                                              var width = jQuery(window).width();
                                             if (is_firefox && (is_android || is_iphone)){
 
                                                       } else{
                                                       var timer;
-                                                              $n(window).bind('resize', function(){
-                                                      if ($n(window).width() != width){
+                                                              jQuery(window).bind('resize', function(){
+                                                      if (jQuery(window).width() != width){
 
-                                                      width = $n(window).width();
+                                                      width = jQuery(window).width();
                                                               timer && clearTimeout(timer);
                                                               timer = setTimeout(onResize<?php echo $newrand; ?>, 600);
                                                       }
@@ -2592,40 +3805,43 @@ function print_responsive_video_gallery_plus_lightbox_func($atts) {
                                               }
 
                                       function onResize<?php echo $newrand; ?>(){
-                                      $n('#<?php echo $rand_Num_td; ?>').html('');
-                                              $n('#<?php echo $rand_Num_td; ?>').html(<?php echo $rand_var_name; ?>);
-                                              $n('#<?php echo $rand_Numb; ?>').bxSlider({
+                                      
+                                             jQuery('#<?php echo $rand_Num_td; ?>').html('');
+                                              jQuery("#<?php echo $rand_Numb; ?>").show();
+                                              jQuery('#<?php echo $rand_Num_td; ?>').html(<?php echo $rand_var_name; ?>);
+                                              jQuery('#<?php echo $rand_Numb; ?>').bxSlider({
 
                                                   <?php if($settings['visible']==1 ):?>
                                                   mode:'fade',
                                                  <?php endif;?>
-                                                           slideWidth: <?php echo $settings['imagewidth']; ?>,
+                                                   slideWidth: <?php echo $settings['imagewidth']; ?>,
                                                    minSlides: <?php echo $settings['min_visible']; ?>,
                                                    maxSlides: <?php echo $settings['visible']; ?>,
                                                    moveSlides: <?php echo $settings['scroll']; ?>,
                                                    slideMargin:<?php echo $settings['imageMargin']; ?>,
+                                                   preventDefaultSwipeY: false,
                                                    speed:<?php echo $settings['speed']; ?>,
                                                    pause:<?php echo $settings['pause']; ?>,
-                                                  <?php if ($settings['pauseonmouseover'] and $settings['auto']) { ?>
+                                                  <?php if($settings['pauseonmouseover'] and ($settings['auto']==1 or $settings['auto']==2) ){ ?>
                                                     autoHover: true,
                                                   <?php
                                                     } 
                                                     else {
-                                                          if ($settings ['auto']) {
+                                                          if ($settings['auto']==1 or $settings['auto']==2) {
                                                      ?>
                                                           autoHover:false,
                                                      <?php
                                                           }
                                                      }
                                                     ?>
-                                                    <?php if ($settings['auto']): ?>
+                                                    <?php if ($settings['auto']==1): ?>
                                                       controls:false,
                                                    <?php else: ?>
                                                       controls:true,
                                                    <?php endif; ?>
                                                      pager:false,
                                                      useCSS:false,
-                                                   <?php if ($settings['auto']): ?>
+                                                   <?php if($settings['auto']==1 or $settings['auto']==2):?>
                                                      autoStart:true,
                                                      autoDelay:200,
                                                      auto:true,
@@ -2635,64 +3851,261 @@ function print_responsive_video_gallery_plus_lightbox_func($atts) {
                                                    <?php else: ?>
                                                      infiniteLoop: false,
                                                    <?php endif; ?>
+                                                   <?php if($settings['show_pager']):?>
+                                                     pager:true, 
+                                                   <?php else:?>
+                                                     pager:false,
+                                                   <?php endif;?>
+                                                   <?php if($settings['show_caption']):?>
+                                                     captions:true, 
+                                                   <?php else:?>
                                                      captions:false,
-                                                      pager:false,
+                                                   <?php endif;?>
+                                                       onSlideBefore: function(slideElement){
+                                                        
+                                                         jQuery(slideElement).find('img').each(function(index, elm) {
+                                                                
+                                                                 if(!elm.complete || elm.naturalWidth === 0){
+
+                                                                    var toload='';
+                                                                    var toloadval='';
+                                                                    jQuery.each(elm.attributes, function(i, attrib){
+
+                                                                        var value = attrib.value;
+                                                                        var aname=attrib.name;
+
+                                                                        var pattern = /^((http|https):\/\/)/;
+
+                                                                        if(pattern.test(value) && aname!='src' && aname.indexOf('data-html5_vurl')==-1) {
+
+                                                                            toload=aname;
+                                                                            toloadval=value;
+                                                                            }
+                                                                        // do your magic :-)
+                                                                    });
+
+                                                                    vsrc= jQuery(elm).attr("src");
+                                                                    jQuery(elm).removeAttr("src");
+                                                                    dsrc= jQuery(elm).attr("data-src");
+                                                                    lsrc= jQuery(elm).attr("data-lazy-src");
+
+                                                                    if(dsrc!== undefined && dsrc!='' && dsrc!=vsrc){
+                                                                             jQuery(elm).attr("src",dsrc);
+                                                                        }
+                                                                        else if(lsrc!== undefined && lsrc!=vsrc){
+
+                                                                             jQuery(elm).attr("src",lsrc);
+                                                                        }
+                                                                         else if(toload!='' && toload!='srcset' && toloadval!='' && toloadval!=vsrc){
+
+                                                                            $(elm).attr("src",toloadval);
+
+
+                                                                            } 
+                                                                        else{
+
+                                                                             jQuery(elm).attr("src",vsrc);
+
+                                                                        }   
+
+                                                                    elm= jQuery(elm)[0];      
+                                                                    if(!elm.complete && elm.naturalHeight == 0){
+
+                                                                         jQuery(elm).removeAttr('loading');
+                                                                         jQuery(elm).removeAttr('data-lazy-type');
+
+
+                                                                         jQuery(elm).removeClass('lazy');
+
+                                                                         jQuery(elm).removeClass('lazyLoad');
+                                                                         jQuery(elm).removeClass('lazy-loaded');
+                                                                         jQuery(elm).removeClass('jetpack-lazy-image');
+                                                                         jQuery(elm).removeClass('jetpack-lazy-image--handled');
+                                                                         jQuery(elm).removeClass('lazy-hidden');
+
+                                                                }
+
+                                                           
+                                                            }
+                                                        
+                                                         });
+
+                                                   },   
                                                      onSliderLoad: function(){
                                    
-                                                                $n("#<?php echo $rand_Numb; ?>").css("visibility", "visible");
+                                                                
 
-                                                                $n(".<?php echo $randOmVlBox;?>").fancybox({
-                                                                       'type'    : "iframe",
-                                                                       'overlayColor':'#000000',
-                                                                        'padding': 10,
-                                                                        'autoScale': true,
-                                                                        'autoDimensions':true,
-                                                                        'uniqObj':uniqObj<?php echo $uniqId;?>,
-                                                                        'transitionIn': 'none',
-                                                                        'transitionOut': 'none',
-                                                                        'titlePosition': 'outside',
-                                                                        <?php if ($settings['circular']): ?>
-                                                                              'cyclic':true,
-                                                                             <?php else: ?>
-                                                                              'cyclic':false,
-                                                                             <?php endif; ?>
-                                                                        'hideOnContentClick':false,
-                                                                        'width' : 650,
-                                                                         'height' : 400,
-                                                                        'titleFormat': function(title, currentArray, currentIndex, currentOpts) {
-
-                                                                          var currtElem = $n('#<?php echo $rand_Numb; ?> a[href="'+currentOpts.href+'"]');
-
-                                                                          var isoverlay = $n(currtElem).attr('data-overlay')
-
-                                                                         if(isoverlay=="1" && $n.trim(title)!=""){
-                                                                          return '<span id="fancybox-title-over">' + title  + '</span>';
-                                                                         }
-                                                                         else{
-                                                                             return '';
-                                                                         }
-
-                                                                      },
-
-                                                                   }); 
-
+                                                                                                     <?php if ( isset($settings['lightbox_engine']) && $settings['lightbox_engine'] === 'legacy' ): ?>
+                                                                                                     jQuery(".video_lbox").fancybox_vgl({
+                                                                                                         'type'    : "iframe",
+                                                                                                         'overlayColor':'#000000',
+                                                                                                         'padding': 10,
+                                                                                                         'autoScale': true,
+                                                                                                         'autoDimensions':true,
+                                                                                                         'uniqObj': jQuery("a[rel^='<?php echo $randOmeRel;?>']"),
+                                                                                                         'transitionIn': 'none',
+                                                                                                         'transitionOut': 'none',
+                                                                                                         'titlePosition': 'outside',
+                                                                                                         <?php if ($settings['circular']): ?>
+                                                                                                         'cyclic':true,
+                                                                                                         <?php else: ?>
+                                                                                                         'cyclic':false,
+                                                                                                         <?php endif; ?>
+                                                                                                         'hideOnContentClick':false,
+                                                                                                         'width' : 650,
+                                                                                                         'height' : 400,
+                                                                                                         'titleFormat': function(title, currentArray, currentIndex, currentOpts) {
+                                                                                                             var currtElem = jQuery('#<?php echo $rand_Numb; ?> a[href="'+currentOpts.href+'"]');
+                                                                                                             var isoverlay = jQuery(currtElem).attr('data-overlay');
+                                                                                                             if(isoverlay=="1" && jQuery.trim(title)!=""){
+                                                                                                                 return '<span id="fancybox_vgl-title-over">' + title  + '</span>';
+                                                                                                             }
+                                                                                                             else{
+                                                                                                                 return '';
+                                                                                                             }
+                                                                                                         },
+                                                                                                     });
+                                                                                                     <?php else: ?>
+                                                                                                     RVGLightbox.initGallery(".video_lbox", <?php echo $settings['circular'] ? 'true' : 'false'; ?>);
+                                                                                                     <?php endif; ?>
                                                              }        
 
                                           });
-                                              $n("#<?php echo $rand_Numb; ?>").css("visibility", "visible");
+                                              
                                       }
 
-                          <?php } ?>
+                                <?php } ?>
 
                                   
+                                   window.rebind<?php echo $rand_Numb;?> = function() {
 
-                              });
+                                                                               <?php if ( isset($settings['lightbox_engine']) && $settings['lightbox_engine'] === 'legacy' ): ?>
+                                                                               jQuery(".video_lbox").fancybox_vgl({
+                                                                                   'type'    : "iframe",
+                                                                                   'overlayColor':'#000000',
+                                                                                   'padding': 10,
+                                                                                   'autoScale': true,
+                                                                                   'autoDimensions':true,
+                                                                                   'uniqObj': jQuery("a[rel^='<?php echo $randOmeRel;?>']"),
+                                                                                   'transitionIn': 'none',
+                                                                                   'transitionOut': 'none',
+                                                                                   'titlePosition': 'outside',
+                                                                                   <?php if ($settings['circular']): ?>
+                                                                                   'cyclic':true,
+                                                                                   <?php else: ?>
+                                                                                   'cyclic':false,
+                                                                                   <?php endif; ?>
+                                                                                   'hideOnContentClick':false,
+                                                                                   'width' : 650,
+                                                                                   'height' : 400,
+                                                                                   'titleFormat': function(title, currentArray, currentIndex, currentOpts) {
+                                                                                       var currtElem = jQuery('#<?php echo $rand_Numb; ?> a[href="'+currentOpts.href+'"]');
+                                                                                       var isoverlay = jQuery(currtElem).attr('data-overlay');
+                                                                                       if(isoverlay=="1" && jQuery.trim(title)!=""){
+                                                                                           return '<span id="fancybox_vgl-title-over">' + title  + '</span>';
+                                                                                       }
+                                                                                       else{
+                                                                                           return '';
+                                                                                       }
+                                                                                   },
+                                                                               });
+                                                                               <?php else: ?>
+                                                                               RVGLightbox.initGallery(".video_lbox", <?php echo $settings['circular'] ? 'true' : 'false'; ?>);
+                                                                               <?php endif; ?>
+                                      }
+
+                                 }    
+                            }, 100);
+
+                              
+                                
+                          
                                       
                                       
-                           </script>
+                          window.addEventListener('load', function() {
 
-                             
-         <?php } 
+
+                                        setTimeout(function(){ 
+
+                                                if(jQuery("#<?php echo $rand_Numb;?>").find('.bx-loading').length>0){
+
+                                                        jQuery("#<?php echo $rand_Numb;?>").find('img').each(function(index, elm) {
+                                                            
+                                                                if(!elm.complete || elm.naturalWidth === 0){
+
+                                                                    var toload='';
+                                                                    var toloadval='';
+                                                                    jQuery.each(this.attributes, function(i, attrib){
+
+                                                                            var value = attrib.value;
+                                                                            var aname=attrib.name;
+
+                                                                            var pattern = /^((http|https):\/\/)/;
+
+                                                                            if(pattern.test(value) && aname!='src') {
+
+                                                                                    toload=aname;
+                                                                                    toloadval=value;
+                                                                             }
+                                                                          
+                                                                     });
+
+                                                                            vsrc=jQuery(elm).attr("src");
+                                                                            jQuery(elm).removeAttr("src");
+                                                                            dsrc=jQuery(elm).attr("data-src");
+                                                                            lsrc=jQuery(elm).attr("data-lazy-src");
+
+
+                                                                               if(dsrc!== undefined && dsrc!='' && dsrc!=vsrc){
+                                                                                                             jQuery(elm).attr("src",dsrc);
+                                                                                    }
+                                                                                    else if(lsrc!== undefined && lsrc!=vsrc){
+
+                                                                                                     jQuery(elm).attr("src",lsrc);
+                                                                                    }
+                                                                                    else if(toload!='' && toload!='srcset' && toloadval!='' && toloadval!=vsrc){
+
+                                                                                            jQuery(elm).removeAttr(toload);
+                                                                                            jQuery(elm).attr("src",toloadval);
+
+
+                                                                                        } 
+                                                                                    else{
+
+                                                                                                    jQuery(elm).attr("src",vsrc);
+
+                                                                               }   
+
+                                                                            elm=jQuery(elm)[0];      
+                                                                             if(!elm.complete && elm.naturalHeight == 0){
+
+                                                                            jQuery(elm).removeAttr('loading');
+                                                                            jQuery(elm).removeAttr('data-lazy-type');
+
+
+                                                                            jQuery(elm).removeClass('lazy');
+
+                                                                            jQuery(elm).removeClass('lazyLoad');
+                                                                            jQuery(elm).removeClass('lazy-loaded');
+                                                                            jQuery(elm).removeClass('jetpack-lazy-image');
+                                                                            jQuery(elm).removeClass('jetpack-lazy-image--handled');
+                                                                            jQuery(elm).removeClass('lazy-hidden');
+
+                                                                        }
+                                                                 }
+
+                                                            }).promise().done( function(){ 
+
+                                                                    jQuery("#<?php echo $rand_Num_td;?>").find('.bx-loading').remove();
+                                                            } );
+
+                                                    }
+
+
+                                           }, 6000);
+
+                                });
+                           </script><!-- end print_responsive_video_gallery_plus_lightbox_func --><?php } 
 	$output = ob_get_clean ();
 	return $output;
 }
@@ -2706,7 +4119,7 @@ function responsive_video_gallery_plus_lightbox_is_plugin_page() {
 	$server_uri = "http://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}";
 	
 	foreach ( array (
-			'responsive_video_gallery_with_lightbox_video_management' 
+			'responsive_video_gallery_with_lightbox' 
 	) as $allowURI ) {
 		if (stristr ( $server_uri, $allowURI ))
 			return true;
@@ -2730,5 +4143,46 @@ function responsive_video_gallery_plus_lightbox_admin_scripts_init() {
 }
 
 
+function wrvgwl_remove_extra_p_tags($content){
 
-?>
+        if(strpos($content, 'print_responsive_video_gallery_plus_lightbox_func')!==false){
+        
+            
+            $pattern = "/<!-- print_responsive_video_gallery_plus_lightbox_func -->(.*)<!-- end print_responsive_video_gallery_plus_lightbox_func -->/Uis"; 
+            $content = preg_replace_callback($pattern, function($matches) {
+
+
+               $altered = str_replace("<p>","",$matches[1]);
+               $altered = str_replace("</p>","",$altered);
+              
+                $altered=str_replace("&#038;","&",$altered);
+                $altered=str_replace("&#8221;",'"',$altered);
+              
+
+              return @str_replace($matches[1], $altered, $matches[0]);
+            }, $content);
+
+              
+            
+        }
+        
+        $content = str_replace("<p><!-- print_responsive_video_gallery_plus_lightbox_func -->","<!-- print_responsive_video_gallery_plus_lightbox_func -->",$content);
+        $content = str_replace("<!-- end print_responsive_video_gallery_plus_lightbox_func --></p>","<!-- end print_responsive_video_gallery_plus_lightbox_func -->",$content);
+        
+        
+        return $content;
+  }
+
+  add_filter('widget_text_content', 'wrvgwl_remove_extra_p_tags', 999);
+  add_filter('the_content', 'wrvgwl_remove_extra_p_tags', 999);
+
+  
+function i13_rvgl_render_block_defaults($block_content, $block) { 
+
+    $block_content=wrvgwl_remove_extra_p_tags($block_content);
+    return $block_content; 
+
+}
+
+
+add_filter( 'render_block', 'i13_rvgl_render_block_defaults', 10, 2 );
