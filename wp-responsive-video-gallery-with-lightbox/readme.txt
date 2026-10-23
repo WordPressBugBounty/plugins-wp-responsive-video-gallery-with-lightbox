@@ -3,7 +3,7 @@ Contributors:nik00726
 Donate link:http://www.i13websolution.com/donate-wordpress_image_thumbnail.php
 Tags:video gallery,youtube,vimeo,video slider,lightbox,video carousel,youtube gallery,video player,responsive,gutenberg block
 Requires at least:3.5
-Tested up to:7.0
+Tested up to:7.1
 Version:1.0.48
 Stable tag:1.0.48
 License:GPLv2 or later
@@ -21,9 +21,9 @@ Add a responsive YouTube, Vimeo & Dailymotion video gallery slider with lightbox
 
 **[Live Demo WordPress Responsive Video Carousel With Lightbox](http://blog.i13websolution.com/live-preview-wp-responsive-video-gallery/)**
 
-**[Pro Plugin Video](https://www.youtube.com/watch?v=McMQJjHxi_4)**
+**[Pro Plugin Video](https://www.youtube.com/watch?v=U46FDo50GRk)**
 
-https://www.youtube.com/watch?v=McMQJjHxi_4
+https://www.youtube.com/watch?v=U46FDo50GRk
 
 
 **Please rate this plugin if you find it useful**
